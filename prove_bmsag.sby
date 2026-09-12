@@ -1,6 +1,7 @@
 [options]
 mode bmc
 depth 1
+# wait on
 
 [engines]
 smtbmc yices
