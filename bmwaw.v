@@ -55,11 +55,10 @@ module bmwaw #(
 		cnt1 = 0;
 		cnt0 = 0;
 		for (k = 0; k < XLEN; k = k + 1) begin
-			if (cin[k] == 1'b1) begin
+			if (cin[k]) begin
 				assert (dout[cnt1] == din[k]);
 				cnt1 = cnt1 + 1;
-			end
-			if (cin[k] == 1'b0) begin
+			end else begin
 				assert (dout[XLEN-cnt0-1] == din[k]);
 				cnt0 = cnt0 + 1;
 			end

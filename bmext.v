@@ -29,13 +29,11 @@ module bmext #(
 			if (cin[k] == 1'b1) begin
 				assert (dout[cnt1] == din[k]);
 				cnt1 = cnt1 + 1;
-			end
-			if (cin[XLEN-k-1] == 1'b0) begin
+			end else begin
 				assert (dout[XLEN-cnt0-1] == 1'b0);
 				cnt0 = cnt0 + 1;
 			end
 		end
-			
 	end
 `endif
 endmodule
