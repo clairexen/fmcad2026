@@ -272,6 +272,11 @@
       <input id="speed" type="range" min="0.25" max="6" step="0.25" value="2">
       <output id="speedValue" for="speed">2.00 positions/s</output>
     </div>
+    <div class="control-group">
+      <label class="caption" for="stageSpacing">Spacing</label>
+      <input id="stageSpacing" type="range" min="1" max="5" step="1" value="4">
+      <output id="stageSpacingValue" for="stageSpacing">4 / 5</output>
+    </div>
   </div>
 
   <div class="checks" aria-label="Display options">
@@ -296,8 +301,10 @@
     <button id="inputsAll0" type="button">All 0</button>
     <button id="inputsAlternating" type="button">Alternating</button>
     <button id="inputsRandom" type="button">Random</button>
+    <button id="toggleAllInputs" type="button">Toggle all inputs</button>
     <span class="preset-separator" aria-hidden="true"></span>
     <label class="caption">Switches</label>
+    <button id="setSwitches" type="button">Set switches</button>
     <button id="resetSwitches" type="button">Reset switches</button>
     <button id="toggleAllSwitches" type="button">Toggle all switches</button>
   </div>
@@ -337,6 +344,8 @@
     nSelect: document.getElementById('nSelect'),
     speed: document.getElementById('speed'),
     speedValue: document.getElementById('speedValue'),
+    stageSpacing: document.getElementById('stageSpacing'),
+    stageSpacingValue: document.getElementById('stageSpacingValue'),
     butterfly: document.getElementById('layoutButterfly'),
     omega: document.getElementById('layoutOmega'),
     collapsed: document.getElementById('layoutCollapsed'),
@@ -356,6 +365,8 @@
     inputsAll0: document.getElementById('inputsAll0'),
     inputsAlternating: document.getElementById('inputsAlternating'),
     inputsRandom: document.getElementById('inputsRandom'),
+    toggleAllInputs: document.getElementById('toggleAllInputs'),
+    setSwitches: document.getElementById('setSwitches'),
     resetSwitches: document.getElementById('resetSwitches'),
     toggleAllSwitches: document.getElementById('toggleAllSwitches')
   };
@@ -364,6 +375,7 @@
     N: 8,
     n: 4,
     speed: 2,
+    stageSpacing: 4,
     inputs: [],
     pairState: [],
     layers: [],
@@ -446,8 +458,12 @@
     const dx = Math.min(58, available / (state.N - 1));
     const used = dx * (state.N - 1);
     const x0 = left + (available - used) / 2;
-    const firstStageY = 174;
-    const stageGap = 126;
+    const defaultStageGap = 126;
+    const stageGap = defaultStageGap * (0.2 * state.stageSpacing + 0.2);
+    // Keep the input layer (and therefore its MSB/LSB labels) at the same
+    // distance from the top of the canvas as vertical spacing changes.
+    // At the default spacing (4/5), firstStageY remains exactly 174.
+    const firstStageY = 174 + (stageGap - defaultStageGap);
     const routeProgress = smoothstep(clamp(state.boxProgress / 0.72));
     const r = clamp(0.29 * dx, 6.8, 12.5);
     const ioW = clamp(0.72 * dx, 14, 31);
@@ -474,6 +490,26 @@
       x: slot => x0 + slot * dx,
       stageY: s => firstStageY + s * stageGap
     };
+  }
+
+  function applyStageSpacing(value) {
+    state.stageSpacing = Math.max(1, Math.min(5, Math.round(Number(value) || 4)));
+    el.stageSpacing.value = String(state.stageSpacing);
+    el.stageSpacingValue.textContent = `${state.stageSpacing} / 5`;
+
+    // Vertical spacing is a presentation setting. Keep all logical state and
+    // horizontal switch placement unchanged, and move each switch row to its
+    // corresponding new stage Y coordinate.
+    state.motion = null;
+    const g = geometry();
+    if (state.positions.length === state.n) {
+      for (let s = 0; s < state.n; s++) {
+        for (let j = 0; j < state.N; j++) {
+          state.positions[s][j].y = g.stageY(s);
+        }
+      }
+    }
+    render();
   }
 
   function labelsForCurrentInput() {
@@ -941,6 +977,22 @@
     state.auto.enabled = enabled;
     clearAutoReverts();
     if (enabled) forceAutoConfig();
+    render();
+  }
+
+  function disableAutoConfig() {
+    state.auto.enabled = false;
+    el.auto.checked = false;
+    clearAutoReverts();
+  }
+
+  function setSwitchesOnce() {
+    disableAutoConfig();
+    const desired = desiredAutoConfiguration();
+    for (let s = 0; s < state.n; s++) {
+      for (let q = 0; q < state.N / 2; q++) state.pairState[s][q] = desired[s][q];
+    }
+    recompute();
     render();
   }
 
@@ -1830,6 +1882,20 @@
     render();
   }
 
+  function toggleAllInputs() {
+    for (let j = 0; j < state.N; j++) {
+      // Toggle only binary values. The third-state X is left unchanged.
+      if (state.inputs[j].value === 0) state.inputs[j].value = 1;
+      else if (state.inputs[j].value === 1) state.inputs[j].value = 0;
+    }
+    recompute();
+    if (state.auto.enabled) {
+      clearAutoReverts();
+      forceAutoConfig();
+    }
+    render();
+  }
+
   function toggleInput(j, manual = true) {
     if (j === 0) state.inputs[j].value = state.inputs[j].value === 1 ? 0 : (state.inputs[j].value === 0 ? 2 : 1);
     else state.inputs[j].value ^= 1;
@@ -1849,7 +1915,7 @@
   }
 
   function setAllSwitches(mode) {
-    clearAutoReverts();
+    disableAutoConfig();
     for (let s = 0; s < state.n; s++) {
       for (let q = 0; q < state.N / 2; q++) {
         if (mode === 'reset') state.pairState[s][q] = 0;
@@ -1857,7 +1923,6 @@
       }
     }
     recompute();
-    if (state.auto.enabled) forceAutoConfig();
     render();
   }
 
@@ -1989,6 +2054,9 @@
   });
 
   el.nSelect.addEventListener('change', () => resetNetwork(Number(el.nSelect.value)));
+  el.stageSpacing.addEventListener('input', () => {
+    applyStageSpacing(el.stageSpacing.value);
+  });
   el.speed.addEventListener('input', () => {
     state.speed = Number(el.speed.value);
   
@@ -2009,6 +2077,8 @@
   el.inputsAll0.addEventListener('click', () => setInputPattern('all0'));
   el.inputsAlternating.addEventListener('click', () => setInputPattern('alternating'));
   el.inputsRandom.addEventListener('click', () => setInputPattern('random'));
+  el.toggleAllInputs.addEventListener('click', toggleAllInputs);
+  el.setSwitches.addEventListener('click', setSwitchesOnce);
   el.resetSwitches.addEventListener('click', () => setAllSwitches('reset'));
   el.toggleAllSwitches.addEventListener('click', () => setAllSwitches('toggle'));
   el.applyLabels.addEventListener('click', applyLabels);
@@ -2026,6 +2096,7 @@
         N: state.N,
         n: state.n,
         speed: state.speed,
+        stageSpacing: state.stageSpacing,
         layout: state.layout,
         movingTo: state.motion?.targetLayout ?? null,
         boxProgress: state.boxProgress,
@@ -2059,6 +2130,7 @@
   });
 
   el.speedValue.textContent = `${state.speed.toFixed(2)} positions/s`;
+  el.stageSpacingValue.textContent = `${state.stageSpacing} / 5`;
   resetNetwork(8);
 })();
 </script>
