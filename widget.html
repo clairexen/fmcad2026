@@ -283,6 +283,7 @@
     <label><input id="showStars" type="checkbox"> Correction stars</label>
     <label><input id="showChecks" type="checkbox"> Checkmarks</label>
     <label><input id="showSwitchLabels" type="checkbox"> Switch-output labels</label>
+    <label><input id="showSignalShades" type="checkbox"> Signal shades</label>
     <label><input id="showPairArcs" type="checkbox"> Paired-switch arcs</label>
   </div>
   <div class="input-presets" aria-label="Layout and input patterns">
@@ -349,6 +350,7 @@
     stars: document.getElementById('showStars'),
     checks: document.getElementById('showChecks'),
     switchLabels: document.getElementById('showSwitchLabels'),
+    shades: document.getElementById('showSignalShades'),
     pairArcs: document.getElementById('showPairArcs'),
     inputsAll1: document.getElementById('inputsAll1'),
     inputsAll0: document.getElementById('inputsAll0'),
@@ -393,6 +395,34 @@
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
+
+
+  function mixHex(a, b, t) {
+    t = clamp(t);
+    const ai = parseInt(a.slice(1), 16), bi = parseInt(b.slice(1), 16);
+    const ar = (ai >> 16) & 255, ag = (ai >> 8) & 255, ab = ai & 255;
+    const br = (bi >> 16) & 255, bg = (bi >> 8) & 255, bb = bi & 255;
+    const r = Math.round(lerp(ar, br, t)), g = Math.round(lerp(ag, bg, t)), bl = Math.round(lerp(ab, bb, t));
+    return `#${((1 << 24) | (r << 16) | (g << 8) | bl).toString(16).slice(1)}`;
+  }
+
+  function shadeBase(base, signal) {
+    if (!el.shades?.checked || !signal || signal.origin == null || state.N <= 1) return base;
+    // origin 0 is the displayed MSB side; origin N-1 is the displayed LSB side.
+    // Thus t=0 is the dark LSB end and t=1 the bright MSB end.
+    const t = (state.N - 1 - signal.origin) / (state.N - 1);
+    return t < 0.5 ? mixHex('#000000', base, 0.55 + 0.90 * t) : mixHex(base, '#ffffff', 0.90 * (t - 0.5));
+  }
+
+  function signalCoreColor(signal) {
+    const base = signal.value === 2 ? '#727b89' : (signal.value === 1 ? '#236f9d' : '#9a4a22');
+    return shadeBase(base, signal);
+  }
+
+  function signalGlowColor(signal) {
+    const base = signal.value === 2 ? '#c8ced8' : (signal.value === 1 ? '#87d7ff' : '#ffc75e');
+    return shadeBase(base, signal);
+  }
 
   function rotR(x, k, n) {
     k %= n;
@@ -1265,11 +1295,14 @@
     const amplitude = clamp(0.075 * g.dx, 1.15, 2.1);
     const wavelength = clamp(0.90 * g.dx, 15, 28);
     const inactiveParts = [], activeOneParts = [], activeZeroParts = [], activeTriParts = [];
-    const addActive = (a, b, value) => {
+    const shadedParts = Array.from({ length: state.N }, () => []);
+    const addActive = (a, b, signal) => {
       if (dist(a, b) < 0.05) return;
+      const value = signal.value;
       const d = value === 1 ? `M${fmt(a.x)},${fmt(a.y)}L${fmt(b.x)},${fmt(b.y)}` : wavyD([a, b], amplitude, wavelength);
       if (!d) return;
-      (value === 2 ? activeTriParts : (value === 1 ? activeOneParts : activeZeroParts)).push(d);
+      if (el.shades.checked) shadedParts[signal.origin].push(d);
+      else (value === 2 ? activeTriParts : (value === 1 ? activeOneParts : activeZeroParts)).push(d);
     };
     const addInactive = (a, b) => {
       if (dist(a, b) < 0.05) return;
@@ -1277,30 +1310,33 @@
     };
     for (let s = 0; s < state.n; s++) {
       const input = state.layers[s], output = state.layers[s + 1];
-      for (let j = 0; j < state.N; j++) addActive(vg.stageSources[s][j], vg.stageInputNodes[s][j], input[j].value);
+      for (let j = 0; j < state.N; j++) addActive(vg.stageSources[s][j], vg.stageInputNodes[s][j], input[j]);
       for (let q = 0; q < state.N / 2; q++) {
         const j0 = rotL(2*q, s, state.n), j1 = rotL(2*q+1, s, state.n);
         const sw0 = vg.switchGeom[s][j0], sw1 = vg.switchGeom[s][j1];
         const node0 = vg.stageInputNodes[s][j0], node1 = vg.stageInputNodes[s][j1];
         const pass = state.pairState[s][q] === 0;
         if (pass) {
-          addActive(node0, sw0.upperLeft, input[j0].value); addInactive(node1, sw0.upperRight);
-          addInactive(node0, sw1.upperLeft); addActive(node1, sw1.upperRight, input[j1].value);
-          addActive(sw0.upperLeft, sw0.output, output[j0].value); addInactive(sw0.upperRight, sw0.output);
-          addInactive(sw1.upperLeft, sw1.output); addActive(sw1.upperRight, sw1.output, output[j1].value);
+          addActive(node0, sw0.upperLeft, input[j0]); addInactive(node1, sw0.upperRight);
+          addInactive(node0, sw1.upperLeft); addActive(node1, sw1.upperRight, input[j1]);
+          addActive(sw0.upperLeft, sw0.output, output[j0]); addInactive(sw0.upperRight, sw0.output);
+          addInactive(sw1.upperLeft, sw1.output); addActive(sw1.upperRight, sw1.output, output[j1]);
         } else {
-          addInactive(node0, sw0.upperLeft); addActive(node1, sw0.upperRight, input[j1].value);
-          addActive(node0, sw1.upperLeft, input[j0].value); addInactive(node1, sw1.upperRight);
-          addInactive(sw0.upperLeft, sw0.output); addActive(sw0.upperRight, sw0.output, output[j0].value);
-          addActive(sw1.upperLeft, sw1.output, output[j1].value); addInactive(sw1.upperRight, sw1.output);
+          addInactive(node0, sw0.upperLeft); addActive(node1, sw0.upperRight, input[j1]);
+          addActive(node0, sw1.upperLeft, input[j0]); addInactive(node1, sw1.upperRight);
+          addInactive(sw0.upperLeft, sw0.output); addActive(sw0.upperRight, sw0.output, output[j0]);
+          addActive(sw1.upperLeft, sw1.output, output[j1]); addInactive(sw1.upperRight, sw1.output);
         }
-        addActive(sw0.output, vg.stageOutputNodes[s][j0], output[j0].value);
-        addActive(sw1.output, vg.stageOutputNodes[s][j1], output[j1].value);
+        addActive(sw0.output, vg.stageOutputNodes[s][j0], output[j0]);
+        addActive(sw1.output, vg.stageOutputNodes[s][j1], output[j1]);
       }
     }
     const finalLayer = state.layers[state.n];
-    for (let j = 0; j < state.N; j++) addActive(vg.finalSources[j], vg.outputPorts[j], finalLayer[j].value);
-    return { inactiveD: inactiveParts.join(''), oneD: activeOneParts.join(''), zeroD: activeZeroParts.join(''), triD: activeTriParts.join('') };
+    for (let j = 0; j < state.N; j++) addActive(vg.finalSources[j], vg.outputPorts[j], finalLayer[j]);
+    return {
+      inactiveD: inactiveParts.join(''), oneD: activeOneParts.join(''), zeroD: activeZeroParts.join(''), triD: activeTriParts.join(''),
+      shadedD: shadedParts.map(parts => parts.join(''))
+    };
   }
 
   function renderIOBox(g, x, y, signal, kind, j) {
@@ -1308,8 +1344,8 @@
     const bitSize = clamp(g.dx * 0.16, 5.5, 8.2);
     const value = signal.value;
     const tri = value === 2;
-    const glowStroke = tri ? '#c8ced8' : (value ? '#87d7ff' : '#ffc75e');
-    const coreStroke = tri ? '#727b89' : (value ? '#236f9d' : '#9a4a22');
+    const glowStroke = signalGlowColor(signal);
+    const coreStroke = signalCoreColor(signal);
     const fill = tri ? '#f4f5f7' : (value ? '#f1fbff' : '#fff8e8');
     const shape = value === 1
       ? `<rect x="${fmt(x - g.ioW / 2)}" y="${fmt(y - g.ioH / 2)}" width="${fmt(g.ioW)}" height="${fmt(g.ioH)}" rx="1.3"/>`
@@ -1342,7 +1378,7 @@
   function fullRender(now = performance.now()) {
     const g = geometry();
     const vg = visualGeometry(g);
-    const { inactiveD, oneD, zeroD, triD } = buildRoutePathData(g, vg);
+    const { inactiveD, oneD, zeroD, triD, shadedD } = buildRoutePathData(g, vg);
 
     const finalLayer = state.layers[state.n];
 
@@ -1388,8 +1424,8 @@
           const nodeOut = vg.stageOutputNodes[s][j];
           const inputSig = state.layers[s][j];
           const outputSig = state.layers[s + 1][j];
-          boxFront += `<circle cx="${fmt(nodeIn.x)}" cy="${fmt(nodeIn.y)}" r="2.7" fill="${inputSig.value === 2 ? '#aab2bf' : (inputSig.value ? '#236f9d' : '#9a4a22')}" stroke="white" stroke-width="0.8" opacity="${fmt(g.nodeOpacity)}"/>`;
-          boxFront += `<circle cx="${fmt(nodeOut.x)}" cy="${fmt(nodeOut.y)}" r="2.7" fill="${outputSig.value === 2 ? '#aab2bf' : (outputSig.value ? '#236f9d' : '#9a4a22')}" stroke="white" stroke-width="0.8" opacity="${fmt(g.nodeOpacity)}"/>`;
+          boxFront += `<circle cx="${fmt(nodeIn.x)}" cy="${fmt(nodeIn.y)}" r="2.7" fill="${signalCoreColor(inputSig)}" stroke="white" stroke-width="0.8" opacity="${fmt(g.nodeOpacity)}"/>`;
+          boxFront += `<circle cx="${fmt(nodeOut.x)}" cy="${fmt(nodeOut.y)}" r="2.7" fill="${signalCoreColor(outputSig)}" stroke="white" stroke-width="0.8" opacity="${fmt(g.nodeOpacity)}"/>`;
         }
 
         if (g.boxOpacity > 0.05) {
@@ -1424,9 +1460,9 @@
         switchBack += `<circle class="switch-back" transform="${transform}" cx="0" cy="0" r="${fmt(g.r)}" fill="white" fill-opacity="0.83"/>`;
         switchFront += `<g class="switch-front" transform="${transform}">` +
           `<circle cx="0" cy="0" r="${fmt(g.r)}" fill="none" stroke="#303b4d" stroke-width="1.35"/>` +
-          `<circle cx="${fmt(selectedRel.x)}" cy="${fmt(selectedRel.y)}" r="2.5" fill="${selectedSig.value === 2 ? '#aab2bf' : (selectedSig.value ? '#236f9d' : '#9a4a22')}" stroke="white" stroke-width="0.75"/>` +
+          `<circle cx="${fmt(selectedRel.x)}" cy="${fmt(selectedRel.y)}" r="2.5" fill="${signalCoreColor(selectedSig)}" stroke="white" stroke-width="0.75"/>` +
           `<circle cx="${fmt(inactiveRel.x)}" cy="${fmt(inactiveRel.y)}" r="2.35" fill="white" stroke="#8c96a8" stroke-width="1"/>` +
-          `<circle cx="${fmt(outputRel.x)}" cy="${fmt(outputRel.y)}" r="2.6" fill="${outputSig.value === 2 ? '#aab2bf' : (outputSig.value ? '#236f9d' : '#9a4a22')}" stroke="white" stroke-width="0.75"/>` +
+          `<circle cx="${fmt(outputRel.x)}" cy="${fmt(outputRel.y)}" r="2.6" fill="${signalCoreColor(outputSig)}" stroke="white" stroke-width="0.75"/>` +
           `</g>`;
 
         if (el.switchLabels.checked) {
@@ -1469,6 +1505,15 @@
       el.svg.setAttribute('viewBox', `0 ${-topPad} ${g.W} ${g.H + topPad}`);
     }
     el.svg.dataset.n = String(state.N);
+    const shadedGlowMarkup = el.shades.checked ? shadedD.map((d, origin) => {
+      if (!d) return '';
+      const sig = state.inputs[origin];
+      const width = sig.value === 2 ? 8.5 : (sig.value === 1 ? 6.2 : 6.5);
+      const opacity = sig.value === 2 ? 0.62 : (sig.value === 1 ? 0.42 : 0.48);
+      const filter = sig.value === 2 ? ' filter=\"url(#sparkleGlow)\"' : '';
+      return `<path d=\"${d}\" stroke=\"${signalGlowColor(sig)}\" stroke-width=\"${width}\" opacity=\"${opacity}\"${filter}/>`;
+    }).join('') : '';
+    const shadedCoreMarkup = el.shades.checked ? shadedD.map((d, origin) => d ? `<path d=\"${d}\" stroke=\"${signalCoreColor(state.inputs[origin])}\" stroke-width=\"1.65\"/>` : '').join('') : '';
     el.svg.innerHTML = defs +
       `<g id="guides">${renderGuides(g)}</g>` +
       `<g id="boxBacks">${boxBack}</g>` +
@@ -1477,14 +1522,16 @@
       `<g id="switchBacks">${switchBack}</g>` +
       `<g id="inactiveRoutes"><path d="${inactiveD}" fill="none" stroke="#8c96a8" stroke-width="1.35" stroke-dasharray="2.6 4.2" stroke-linecap="round" stroke-linejoin="round"/></g>` +
       `<g id="signalGlows" fill="none" stroke-linecap="round" stroke-linejoin="round">` +
-        `<path d="${oneD}" stroke="#87d7ff" stroke-width="6.2" opacity="0.42"/>` +
-        `<path d="${zeroD}" stroke="#ffc75e" stroke-width="6.5" opacity="0.48"/>` +
-        `<path d="${triD}" stroke="#c8ced8" stroke-width="8.5" opacity="0.62" filter="url(#sparkleGlow)"/>` +
+        (el.shades.checked ? shadedGlowMarkup :
+          `<path d="${oneD}" stroke="#87d7ff" stroke-width="6.2" opacity="0.42"/>` +
+          `<path d="${zeroD}" stroke="#ffc75e" stroke-width="6.5" opacity="0.48"/>` +
+          `<path d="${triD}" stroke="#c8ced8" stroke-width="8.5" opacity="0.62" filter="url(#sparkleGlow)"/>`) +
       `</g>` +
       `<g id="signalCores" fill="none" stroke-linecap="round" stroke-linejoin="round">` +
-        `<path d="${oneD}" stroke="#236f9d" stroke-width="1.65"/>` +
-        `<path d="${zeroD}" stroke="#9a4a22" stroke-width="1.65"/>` +
-        `<path d="${triD}" stroke="#727b89" stroke-width="1.65"/>` +
+        (el.shades.checked ? shadedCoreMarkup :
+          `<path d="${oneD}" stroke="#236f9d" stroke-width="1.65"/>` +
+          `<path d="${zeroD}" stroke="#9a4a22" stroke-width="1.65"/>` +
+          `<path d="${triD}" stroke="#727b89" stroke-width="1.65"/>`) +
       `</g>` +
       `<g id="boxFronts">${boxFront}</g>` +
       `<g id="switchFronts">${switchFront}</g>` +
@@ -1569,42 +1616,44 @@
     const amplitude = clamp(0.075 * g.dx, 1.15, 2.1);
     const wavelength = clamp(0.90 * g.dx, 15, 28);
     const inactive = new Path2D(), one = new Path2D(), zero = new Path2D(), tri = new Path2D();
+    const shaded = Array.from({ length: state.N }, () => new Path2D());
     const addInactive = (a, b) => {
       if (dist(a, b) < 0.05) return;
       inactive.moveTo(a.x, a.y); inactive.lineTo(b.x, b.y);
     };
-    const addActive = (a, b, value) => {
+    const addActive = (a, b, signal) => {
       if (dist(a, b) < 0.05) return;
-      const path = value === 2 ? tri : (value === 1 ? one : zero);
+      const value = signal.value;
+      const path = el.shades.checked ? shaded[signal.origin] : (value === 2 ? tri : (value === 1 ? one : zero));
       if (value === 1) { path.moveTo(a.x, a.y); path.lineTo(b.x, b.y); }
       else addCanvasWavy(path, a, b, amplitude, wavelength);
     };
     for (let s = 0; s < state.n; s++) {
       const input = state.layers[s], output = state.layers[s + 1];
-      for (let j = 0; j < state.N; j++) addActive(vg.stageSources[s][j], vg.stageInputNodes[s][j], input[j].value);
+      for (let j = 0; j < state.N; j++) addActive(vg.stageSources[s][j], vg.stageInputNodes[s][j], input[j]);
       for (let q = 0; q < state.N / 2; q++) {
         const j0 = rotL(2*q, s, state.n), j1 = rotL(2*q+1, s, state.n);
         const sw0 = vg.switchGeom[s][j0], sw1 = vg.switchGeom[s][j1];
         const node0 = vg.stageInputNodes[s][j0], node1 = vg.stageInputNodes[s][j1];
         const pass = state.pairState[s][q] === 0;
         if (pass) {
-          addActive(node0, sw0.upperLeft, input[j0].value); addInactive(node1, sw0.upperRight);
-          addInactive(node0, sw1.upperLeft); addActive(node1, sw1.upperRight, input[j1].value);
-          addActive(sw0.upperLeft, sw0.output, output[j0].value); addInactive(sw0.upperRight, sw0.output);
-          addInactive(sw1.upperLeft, sw1.output); addActive(sw1.upperRight, sw1.output, output[j1].value);
+          addActive(node0, sw0.upperLeft, input[j0]); addInactive(node1, sw0.upperRight);
+          addInactive(node0, sw1.upperLeft); addActive(node1, sw1.upperRight, input[j1]);
+          addActive(sw0.upperLeft, sw0.output, output[j0]); addInactive(sw0.upperRight, sw0.output);
+          addInactive(sw1.upperLeft, sw1.output); addActive(sw1.upperRight, sw1.output, output[j1]);
         } else {
-          addInactive(node0, sw0.upperLeft); addActive(node1, sw0.upperRight, input[j1].value);
-          addActive(node0, sw1.upperLeft, input[j0].value); addInactive(node1, sw1.upperRight);
-          addInactive(sw0.upperLeft, sw0.output); addActive(sw0.upperRight, sw0.output, output[j0].value);
-          addActive(sw1.upperLeft, sw1.output, output[j1].value); addInactive(sw1.upperRight, sw1.output);
+          addInactive(node0, sw0.upperLeft); addActive(node1, sw0.upperRight, input[j1]);
+          addActive(node0, sw1.upperLeft, input[j0]); addInactive(node1, sw1.upperRight);
+          addInactive(sw0.upperLeft, sw0.output); addActive(sw0.upperRight, sw0.output, output[j0]);
+          addActive(sw1.upperLeft, sw1.output, output[j1]); addInactive(sw1.upperRight, sw1.output);
         }
-        addActive(sw0.output, vg.stageOutputNodes[s][j0], output[j0].value);
-        addActive(sw1.output, vg.stageOutputNodes[s][j1], output[j1].value);
+        addActive(sw0.output, vg.stageOutputNodes[s][j0], output[j0]);
+        addActive(sw1.output, vg.stageOutputNodes[s][j1], output[j1]);
       }
     }
     const finalLayer = state.layers[state.n];
-    for (let j = 0; j < state.N; j++) addActive(vg.finalSources[j], vg.outputPorts[j], finalLayer[j].value);
-    return { inactive, one, zero, tri };
+    for (let j = 0; j < state.N; j++) addActive(vg.finalSources[j], vg.outputPorts[j], finalLayer[j]);
+    return { inactive, one, zero, tri, shaded };
   }
 
   function drawMotionGuides(ctx, g) {
@@ -1641,13 +1690,25 @@
     ctx.lineCap='round'; ctx.lineJoin='round';
     ctx.setLineDash([2.6,4.2]); ctx.strokeStyle='#8c96a8'; ctx.lineWidth=1.35; ctx.globalAlpha=1; ctx.stroke(paths.inactive);
     ctx.setLineDash([]);
-    ctx.globalAlpha=0.42; ctx.strokeStyle='#87d7ff'; ctx.lineWidth=6.2; ctx.stroke(paths.one);
-    ctx.globalAlpha=0.48; ctx.strokeStyle='#ffc75e'; ctx.lineWidth=6.5; ctx.stroke(paths.zero);
-    ctx.globalAlpha=0.62; ctx.strokeStyle='#c8ced8'; ctx.lineWidth=8.5; ctx.shadowColor='#c8ced8'; ctx.shadowBlur=2.2; ctx.stroke(paths.tri);
-    ctx.shadowBlur=0; ctx.globalAlpha=1;
-    ctx.strokeStyle='#236f9d'; ctx.lineWidth=1.65; ctx.stroke(paths.one);
-    ctx.strokeStyle='#9a4a22'; ctx.stroke(paths.zero);
-    ctx.strokeStyle='#727b89'; ctx.stroke(paths.tri);
+    if (el.shades.checked) {
+      for (let origin=0; origin<state.N; origin++) {
+        const sig=state.inputs[origin], path=paths.shaded[origin];
+        ctx.globalAlpha=sig.value===2?0.62:(sig.value===1?0.42:0.48);
+        ctx.strokeStyle=signalGlowColor(sig); ctx.lineWidth=sig.value===2?8.5:(sig.value===1?6.2:6.5);
+        if (sig.value===2) { ctx.shadowColor=signalGlowColor(sig); ctx.shadowBlur=2.2; }
+        ctx.stroke(path); ctx.shadowBlur=0;
+      }
+      ctx.globalAlpha=1; ctx.lineWidth=1.65;
+      for (let origin=0; origin<state.N; origin++) { ctx.strokeStyle=signalCoreColor(state.inputs[origin]); ctx.stroke(paths.shaded[origin]); }
+    } else {
+      ctx.globalAlpha=0.42; ctx.strokeStyle='#87d7ff'; ctx.lineWidth=6.2; ctx.stroke(paths.one);
+      ctx.globalAlpha=0.48; ctx.strokeStyle='#ffc75e'; ctx.lineWidth=6.5; ctx.stroke(paths.zero);
+      ctx.globalAlpha=0.62; ctx.strokeStyle='#c8ced8'; ctx.lineWidth=8.5; ctx.shadowColor='#c8ced8'; ctx.shadowBlur=2.2; ctx.stroke(paths.tri);
+      ctx.shadowBlur=0; ctx.globalAlpha=1;
+      ctx.strokeStyle='#236f9d'; ctx.lineWidth=1.65; ctx.stroke(paths.one);
+      ctx.strokeStyle='#9a4a22'; ctx.stroke(paths.zero);
+      ctx.strokeStyle='#727b89'; ctx.stroke(paths.tri);
+    }
     ctx.restore();
   }
 
@@ -1662,8 +1723,8 @@
       const selectedInputJ = sw.side===0 ? (pass?j0:j1) : (pass?j1:j0);
       const selectedSig=state.layers[s][selectedInputJ], outputSig=state.layers[s+1][j];
       canvasCircle(ctx,sw.center.x,sw.center.y,g.r,null,'#303b4d',1.35);
-      const selectedColor=selectedSig.value===2?'#aab2bf':(selectedSig.value?'#236f9d':'#9a4a22');
-      const outputColor=outputSig.value===2?'#aab2bf':(outputSig.value?'#236f9d':'#9a4a22');
+      const selectedColor=signalCoreColor(selectedSig);
+      const outputColor=signalCoreColor(outputSig);
       canvasCircle(ctx,selectedPort.x,selectedPort.y,2.5,selectedColor,'white',0.75);
       canvasCircle(ctx,inactivePort.x,inactivePort.y,2.35,'white','#8c96a8',1);
       canvasCircle(ctx,sw.output.x,sw.output.y,2.6,outputColor,'white',0.75);
@@ -1955,7 +2016,7 @@
     if (event.key === 'Enter') applyLabels();
   });
   el.boxes.addEventListener('change', () => startBoxAnimation(el.boxes.checked ? 1 : 0));
-  for (const checkbox of [el.upper, el.lower, el.walls, el.stars, el.checks, el.switchLabels, el.pairArcs]) {
+  for (const checkbox of [el.upper, el.lower, el.walls, el.stars, el.checks, el.switchLabels, el.shades, el.pairArcs]) {
     checkbox.addEventListener('change', () => render());
   }
 
