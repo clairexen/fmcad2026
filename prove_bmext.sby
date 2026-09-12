@@ -1,0 +1,18 @@
+[options]
+mode bmc
+depth 1
+# wait on
+
+[engines]
+smtbmc yices
+smtbmc boolector
+
+[script]
+read -noverific
+read -formal bmext.v
+read -vlog95 bmwaw.v
+prep -top bmext
+
+[files]
+bmext.v
+bmwaw.v

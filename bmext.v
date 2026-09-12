@@ -1,4 +1,4 @@
-//  Reference implementation for the "sheep and goats" (BMSAG) operation
+//  Reference implementation for the "bitmask extract" (BMEXT) operation
 //
 //  Copyright (C) 2026  Claire Xenia Wolf <claire@clairexen.net>
 //
@@ -14,13 +14,11 @@
 //  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-module bmsag #(
+module bmext #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
 ) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout, cout);
-	wire [XLEN-1:0] dt, ct;
-	bmwaw #(XLOG2, XLEN) pass_1 (din, cin, dt, ct);
-	bmwaw #(XLOG2, XLEN) pass_2 (dt, ct, dout, cout);
+	bmwaw #(XLOG2, XLEN) impl (din & cin, cin, dout, cout);
 
 `ifdef FORMAL
 	integer k, cnt1, cnt0;
@@ -33,7 +31,7 @@ module bmsag #(
 				cnt1 = cnt1 + 1;
 			end
 			if (cin[XLEN-k-1] == 1'b0) begin
-				assert (dout[XLEN-cnt0-1] == din[XLEN-k-1]);
+				assert (dout[XLEN-cnt0-1] == 1'b0);
 				cnt0 = cnt0 + 1;
 			end
 		end

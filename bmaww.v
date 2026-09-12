@@ -1,4 +1,4 @@
-//  Reference implementation for the "reverse witches and wizards" operation
+//  Reference implementation for the "inverse witches and wizards" (BMAWW) operation
 //
 //  Copyright (C) 2026  Claire Xenia Wolf <claire@clairexen.net>
 //

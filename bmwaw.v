@@ -1,4 +1,4 @@
-//  Reference implementation for the "witches and wizards" operation
+//  Reference implementation for the "witches and wizards" (BMWAW) operation
 //
 //  Copyright (C) 2026  Claire Xenia Wolf <claire@clairexen.net>
 //
