@@ -4,13 +4,12 @@ depth 1
 
 [engines]
 smtbmc yices
-# smtbmc boolector
-# abc bmc3
+smtbmc boolector
 
 [script]
 read -noverific
-read -formal waw.v
-prep -top waw
+read -formal bmwaw.v
+prep -top bmwaw
 
 [files]
-waw.v
+bmwaw.v

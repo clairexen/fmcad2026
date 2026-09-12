@@ -61,14 +61,33 @@ I am going to refer to it as the "witches and wizards" (WAW) operation from
 now on.
 
 In the third mental picture we simply throw the goat bits away and replace them
-with zeros in the output word. This is the semantic of the X86 PEXT instruction.
-Arguably this third mental picture is the most reasonable considering verses
-41-42 of the parable:
+with zeros in the output word. This is the semantic of the X86 / X86_64 "parallel
+extract" (PEXT) instruction. Arguably this third mental picture is the most
+reasonable considering verses 41-42 of the parable from christian scripture:
 
 > Then he will say to those on his left, ‘Depart from me, you who are cursed,
 > into the eternal fire prepared for the devil and his angels. For I was hungry
 > and you gave me nothing to eat, I was thirsty and you gave me nothing to
 > drink, [...]
+
+The X86 / X86_64 ISA also contains the inverse operation with regards to the
+selected bits: "parallel deposit" (PDEP), that places the selected bits in
+their original positions, when executed with a PEXT result and the control word
+that created it, ignoring additional "goat" bits in the input and setting
+"goat" positions in the output word to zero.
+
+We also consider the "inverse sheep and goats" (GAS) and "inverse witches and
+wizards" (AWW) operations. (The meaning behind the memnonic AWW will become
+clear at the end of the discussion of the AWA operation below.)
+
+I personally consider the use of the the word "parallel" (and prefix letter P)
+in the X86 PEXT and PDEP instruction memnonics a prime example of bad ISA
+design, because the memnonic for an instruction should focus on the instruction
+semantic, not performance. Following the direction of my work for the RISC-V 
+Bitmanip Taks Group I therefore use the prefix BM (for Bit-Mask) instead,
+yielding the following 6 instructions with the semantics described above:
+
+> BMSAG BMGAS BMWAW BMAWW BMEXT BMDEP
 
 
 

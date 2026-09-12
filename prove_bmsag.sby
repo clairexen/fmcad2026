@@ -1,0 +1,17 @@
+[options]
+mode bmc
+depth 1
+
+[engines]
+smtbmc yices
+smtbmc boolector
+
+[script]
+read -noverific
+read -formal bmsag.v
+read -vlog95 bmwaw.v
+prep -top bmsag
+
+[files]
+bmsag.v
+bmwaw.v

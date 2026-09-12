@@ -14,7 +14,7 @@
 //  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-module waw #(
+module bmwaw #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
 ) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout, cout);

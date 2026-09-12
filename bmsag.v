@@ -14,13 +14,13 @@
 //  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-module sag #(
+module bmsag #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
 ) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout, cout);
 	wire [XLEN-1:0] dt, ct;
-	waw #(XLOG2, XLEN) pass_1 (din, cin, dt, ct);
-	waw #(XLOG2, XLEN) pass_2 (dt, ct, dout, cout);
+	bmwaw #(XLOG2, XLEN) pass_1 (din, cin, dt, ct);
+	bmwaw #(XLOG2, XLEN) pass_2 (dt, ct, dout, cout);
 
 `ifdef FORMAL
 	integer k, cnt1, cnt0;
