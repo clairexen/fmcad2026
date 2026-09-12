@@ -87,13 +87,17 @@ semantic, not performance. Following the direction of my work for the RISC-V
 Bitmanip Taks Group I therefore use the prefix BM (for Bit-Mask) instead,
 yielding the following 6 instructions with the semantics described above:
 
-> BMSAG BMGAS BMWAW BMAWW BMEXT BMDEP
+| Operation | Reverse-OP | Unselected Bits |
+|:---------:|:----------:|:----------------|
+| BMSAG     | BMGAS      | Order preserved |
+| BMWAW     | BMAWW      | Order reversed  |
+| BMEXT     | BMDEP      | Cleared         |
 
 I've provided Verilog reference implementations for BMWAW and BMAWW in
 the GitHub repository for this Key-Note presentation:
 
-https://github.com/clairexen/fmcad2026/blob/main/bmwaw.v
-https://github.com/clairexen/fmcad2026/blob/main/bmaww.v
+- https://github.com/clairexen/fmcad2026/blob/main/bmwaw.v
+- https://github.com/clairexen/fmcad2026/blob/main/bmaww.v
 
 The same directory (https://github.com/clairexen/fmcad2026/) also contains
 simple reference implementations for the other four instructions BMEXT,
@@ -104,7 +108,7 @@ BMDEP, BMSAG, and BMGAS based on BMWAW and BMAWW using the following equivalence
 	BMSAG(din, cin) := BMWAW(BMWAW(din, cin), cout)   [with cout := BMWAW(cin, cin)]
 	BMGAS(din, cin) := BMAWW(BMAWW(din, cout), cin)   [with cout := BMAWW(cin, cin)]
 
-Note that cout = BMWAW(cin, cin) = BMAWW(cin, cin) and that the Verilog
+Note that `cout = BMWAW(cin, cin) = BMAWW(cin, cin)` and that the Verilog
 reference implementations of BMDEP, BMSAG, and BMGAS do not contain an
 additional instantiation of BMWAW / BMAWW to generate cout because we can
 simply use the `.cout()` output of any BMWAW / BMAWW instance that is
@@ -114,7 +118,7 @@ implementation, because the `.cout()` output of the BMAWW module does only
 depend on `.cin()` and not `.din()`.
 
 The six Verilog modules also contain formal safety properties for the expected
-semantic for each of the bit-manipulation instructions and .sby files for
+semantic for each of the bit-manipulation instructions and `*.sby` files for
 checking those formal properties with SymbiYosys (https://github.com/YosysHQ/sby).
 
 A peculiar patent
