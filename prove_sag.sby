@@ -9,8 +9,10 @@ smtbmc yices
 
 [script]
 read -noverific
-read -formal waw.v
-prep -top waw
+read -formal sag.v
+read -vlog95 waw.v
+prep -top sag
 
 [files]
+sag.v
 waw.v

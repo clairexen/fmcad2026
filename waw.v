@@ -15,7 +15,7 @@
 //  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 module waw #(
-	parameter integer XLOG2 = 3,
+	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
 ) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout, cout);
 	genvar n, i;
@@ -43,10 +43,9 @@ module waw #(
 		end
 	endgenerate
 
-	assign stage[0].st_msk = (1 << (XLEN-1)) - 1;
-
 	assign stage[0].st_di = din;
 	assign stage[0].st_ci = cin;
+	assign stage[0].st_msk = (1 << (XLEN-1)) - 1;
 	assign dout = stage[XLOG2-1].st_do;
 	assign cout = stage[XLOG2-1].st_co;
 
@@ -60,12 +59,11 @@ module waw #(
 				assert (dout[cnt1] == din[k]);
 				cnt1 = cnt1 + 1;
 			end
-			if (cin[XLEN-k-1] == 1'b0) begin
-				assert (dout[XLEN-cnt0-1] == din[XLEN-k-1]);
+			if (cin[k] == 1'b0) begin
+				assert (dout[XLEN-cnt0-1] == din[k]);
 				cnt0 = cnt0 + 1;
 			end
 		end
-			
 	end
 `endif
 endmodule
