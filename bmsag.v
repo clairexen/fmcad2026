@@ -1,4 +1,4 @@
-//  Reference implementation for the "Sheep and Goats" operation
+//  Reference implementation for the "sheep and goats" operation
 //
 //  Copyright (C) 2026  Claire Xenia Wolf <claire@clairexen.net>
 //
