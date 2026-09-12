@@ -1,0 +1,2005 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reverse Butterfly / Reverse Omega Network</title>
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #172033;
+    --muted: #637083;
+    --line: #cbd3df;
+    --panel: #f6f8fb;
+    --panel-2: #ffffff;
+    --blue: #236f9d;
+    --blue-glow: #87d7ff;
+    --zero: #9a4a22;
+    --zero-glow: #ffc75e;
+    --inactive: #8c96a8;
+    --green: #17945d;
+    --red: #c53b4d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 18px;
+    background: #eef2f7;
+    color: var(--ink);
+    font: 14px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .widget {
+    width: min(1560px, 100%);
+    margin: 0 auto;
+    background: var(--panel-2);
+    border: 1px solid #c8d0dc;
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgb(31 45 70 / 0.10);
+    overflow: hidden;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 6px 10px;
+    padding: 8px 10px;
+    background: var(--panel);
+    border-bottom: 1px solid #d8dee8;
+  }
+  .control-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-height: 34px;
+  }
+  .control-group.labels { flex: 1 1 500px; }
+  label.caption {
+    color: #465267;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .02em;
+  }
+  select, input[type="text"], button {
+    min-height: 32px;
+    border: 1px solid #aeb8c8;
+    border-radius: 7px;
+    background: white;
+    color: var(--ink);
+    font: inherit;
+  }
+  select, input[type="text"] { padding: 4px 8px; }
+  input[type="text"] { width: min(100%, 540px); flex: 1 1 260px; }
+  input[type="range"] { width: 145px; }
+  button {
+    padding: 5px 10px;
+    cursor: pointer;
+    font-weight: 650;
+  }
+  button:hover { background: #edf4fb; }
+  button:active { transform: translateY(1px); }
+  button.active, button[aria-pressed="true"] {
+    border-color: #3b7ca8;
+    background: #dff2ff;
+    box-shadow: inset 0 0 0 1px #8ac9ec;
+  }
+  button.stop {
+    border-color: #b34855;
+    background: #fff0f1;
+    color: #8c2230;
+  }
+  .checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding: 0 10px 7px;
+    background: var(--panel);
+    border-bottom: 1px solid #d8dee8;
+  }
+  .checks label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    color: #3f4c61;
+    font-size: 12px;
+  }
+
+  .input-presets {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    background: var(--panel);
+    border-bottom: 1px solid #d8dee8;
+  }
+  .bottom-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 8px 10px;
+    background: var(--panel);
+    border-top: 1px solid #d8dee8;
+  }
+  .preset-separator {
+    width: 1px;
+    height: 24px;
+    margin: 0 3px;
+    background: #cbd3df;
+  }
+  .bottom-controls .labels { flex: 1 1 100%; width: 100%; }
+  .bottom-controls .labels input[type="text"] { width: auto; max-width: none; flex: 1 1 0; }
+
+  .status {
+    min-height: 26px;
+    padding: 5px 10px;
+    color: #38465c;
+    background: #fbfcfe;
+    border-bottom: 1px solid #e2e7ef;
+    font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .canvas-wrap {
+    position: relative;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background:
+      linear-gradient(#fff, #fff) padding-box,
+      repeating-linear-gradient(0deg, transparent 0 23px, rgb(90 115 145 / .035) 23px 24px);
+  }
+  #network {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    min-width: 920px;
+    height: auto;
+    touch-action: pan-x pan-y;
+    user-select: none;
+  }
+  .hit[data-type="switch"] { touch-action: none; }
+  .motion-surface {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: none;
+    pointer-events: none;
+    user-select: none;
+  }
+  #motionGuideCanvas { z-index: 0; }
+  #motionCanvas { z-index: 2; }
+  #motionOverlay { z-index: 3; overflow: visible; }
+  .hint {
+    padding: 5px 10px 6px;
+    border-top: 1px solid #e2e7ef;
+    color: var(--muted);
+    background: #fbfcfe;
+    font-size: 12px;
+  }
+  .hit {
+    fill: transparent;
+    stroke: transparent;
+    pointer-events: all;
+    cursor: pointer;
+  }
+  .hit[data-type="switch"] { cursor: grab; }
+  .hit[data-type="switch"]:active { cursor: grabbing; }
+  .hit:focus-visible {
+    stroke: #1b78b2;
+    stroke-width: 2.4;
+    stroke-dasharray: 4 3;
+    outline: none;
+  }
+  .svg-label {
+    fill: #263246;
+    paint-order: stroke;
+    stroke: white;
+    stroke-width: 2.4px;
+    stroke-linejoin: round;
+  }
+  @media (max-width: 760px) {
+    body { padding: 0; background: #fff; font-size: 13px; }
+    .widget { border: 0; border-radius: 0; box-shadow: none; }
+    .controls {
+      align-items: center;
+      gap: 5px 9px;
+      padding: 7px 8px;
+    }
+    .controls .control-group { min-height: 30px; flex: 1 1 auto; }
+    .controls .control-group:first-child { flex: 0 0 auto; }
+    input[type="range"] { width: min(40vw, 145px); }
+    select, button { min-height: 34px; }
+    button { padding: 4px 8px; }
+    .checks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 3px 8px;
+      padding: 5px 8px 6px;
+    }
+    .checks label { white-space: normal; min-width: 0; line-height: 1.2; }
+    .input-presets {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 5px;
+      padding: 6px 8px;
+    }
+    .input-presets button { width: 100%; min-width: 0; white-space: normal; line-height: 1.15; }
+    .input-presets .preset-separator { display: none; }
+    .input-presets .caption {
+      grid-column: 1 / -1;
+      padding-top: 2px;
+    }
+    .status {
+      min-height: 0;
+      padding: 4px 8px;
+      font-size: 10.5px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .canvas-wrap { overflow-x: auto; overscroll-behavior-x: contain; }
+    #network { min-width: 0; width: 100%; }
+    #network[data-n="16"] { min-width: 520px; }
+    #network[data-n="32"] { min-width: 760px; }
+    #network[data-n="64"] { min-width: 1040px; }
+    .hint {
+      padding: 4px 8px 5px;
+      font-size: 10.5px;
+      line-height: 1.25;
+    }
+    .bottom-controls { padding: 6px 8px; }
+    .bottom-controls .labels { display: grid; grid-template-columns: auto 1fr; gap: 5px 7px; align-items: center; }
+    .bottom-controls .labels input[type="text"] { grid-column: 1 / -1; width: 100%; min-width: 0; font-size: 16px; }
+    .bottom-controls .labels button { justify-self: start; }
+  }
+</style>
+</head>
+<body>
+<main class="widget" aria-label="Reverse butterfly and reverse omega network visualizer">
+  <div class="controls">
+    <div class="control-group">
+      <label class="caption" for="nSelect">Size</label>
+      <select id="nSelect" aria-label="Network size">
+        <option value="8" selected>N = 8</option>
+        <option value="16">N = 16</option>
+        <option value="32">N = 32</option>
+        <option value="64">N = 64</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label class="caption" for="speed">Speed</label>
+      <input id="speed" type="range" min="0.25" max="6" step="0.25" value="2">
+      <output id="speedValue" for="speed">2.00 positions/s</output>
+    </div>
+  </div>
+
+  <div class="checks" aria-label="Display options">
+    <label><input id="autoConfig" type="checkbox"> Auto-config</label>
+    <label><input id="showBoxes" type="checkbox"> 2×2 switch boxes</label>
+    <label><input id="showUpperCarry" type="checkbox"> LSB→MSB zero-toggling band</label>
+    <label><input id="showLowerCarry" type="checkbox"> MSB→LSB one-toggling band</label>
+    <label><input id="showWalls" type="checkbox"> Walls</label>
+    <label><input id="showStars" type="checkbox"> Correction stars</label>
+    <label><input id="showChecks" type="checkbox"> Checkmarks</label>
+    <label><input id="showSwitchLabels" type="checkbox"> Switch-output labels</label>
+    <label><input id="showPairArcs" type="checkbox"> Paired-switch arcs</label>
+  </div>
+  <div class="input-presets" aria-label="Layout and input patterns">
+    <button id="layoutButterfly" type="button">1 · Reverse butterfly</button>
+    <button id="layoutOmega" type="button">2 · Reverse omega</button>
+    <button id="layoutCollapsed" type="button">3 · Collapsed 2×2</button>
+    <span class="preset-separator" aria-hidden="true"></span>
+    <label class="caption">Set inputs</label>
+    <button id="inputsAll1" type="button">All 1</button>
+    <button id="inputsAll0" type="button">All 0</button>
+    <button id="inputsAlternating" type="button">Alternating</button>
+    <button id="inputsRandom" type="button">Random</button>
+    <span class="preset-separator" aria-hidden="true"></span>
+    <label class="caption">Switches</label>
+    <button id="resetSwitches" type="button">Reset switches</button>
+    <button id="toggleAllSwitches" type="button">Toggle all switches</button>
+  </div>
+
+  <div id="status" class="status" role="status" aria-live="polite"></div>
+  <div class="canvas-wrap">
+    <canvas id="motionGuideCanvas" class="motion-surface" aria-hidden="true"></canvas>
+    <svg id="network" xmlns="http://www.w3.org/2000/svg" role="img"
+         aria-label="Interactive reverse butterfly and reverse omega network"></svg>
+    <canvas id="motionCanvas" class="motion-surface" aria-hidden="true"></canvas>
+    <svg id="motionOverlay" class="motion-surface" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+  </div>
+  <div class="hint">Click an input to toggle its bit. Click either switch in a pair—or its box—to toggle pass-through/cross-over. Drag an individual switch; overlap at least half of its matching switch to snap into alignment. Keyboard: Tab, then Enter or Space.</div>
+  <div class="bottom-controls">
+    <div class="control-group labels">
+      <label class="caption" for="customLabels">Signal labels</label>
+      <input id="customLabels" type="text" autocomplete="off" spellcheck="false" value="ABCDEFGHIJKLMNOPQRSTUVWXYZΩΔΣΦΨΛΘΓאלמשחЖЯФДЩشعقنمあかシネンकहमԱՇԺกญქ∞">
+      <button id="applyLabels" type="button">Apply labels</button>
+    </div>
+  </div>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const DEFAULT_LABEL_STRING = 'ABCDEFGHIJKLMNOPQRSTUVWXYZΩΔΣΦΨΛΘΓאלמשחЖЯФДЩشعقنمあかシネンकहमԱՇԺกญქ∞';
+  const DEFAULT_LABELS = Array.from(DEFAULT_LABEL_STRING);
+
+  const el = {
+    svg: document.getElementById('network'),
+    motionGuideCanvas: document.getElementById('motionGuideCanvas'),
+    motionCanvas: document.getElementById('motionCanvas'),
+    motionOverlay: document.getElementById('motionOverlay'),
+    status: document.getElementById('status'),
+    nSelect: document.getElementById('nSelect'),
+    speed: document.getElementById('speed'),
+    speedValue: document.getElementById('speedValue'),
+    butterfly: document.getElementById('layoutButterfly'),
+    omega: document.getElementById('layoutOmega'),
+    collapsed: document.getElementById('layoutCollapsed'),
+    auto: document.getElementById('autoConfig'),
+    customLabels: document.getElementById('customLabels'),
+    applyLabels: document.getElementById('applyLabels'),
+    boxes: document.getElementById('showBoxes'),
+    upper: document.getElementById('showUpperCarry'),
+    lower: document.getElementById('showLowerCarry'),
+    walls: document.getElementById('showWalls'),
+    stars: document.getElementById('showStars'),
+    checks: document.getElementById('showChecks'),
+    switchLabels: document.getElementById('showSwitchLabels'),
+    pairArcs: document.getElementById('showPairArcs'),
+    inputsAll1: document.getElementById('inputsAll1'),
+    inputsAll0: document.getElementById('inputsAll0'),
+    inputsAlternating: document.getElementById('inputsAlternating'),
+    inputsRandom: document.getElementById('inputsRandom'),
+    resetSwitches: document.getElementById('resetSwitches'),
+    toggleAllSwitches: document.getElementById('toggleAllSwitches')
+  };
+
+  const state = {
+    N: 8,
+    n: 4,
+    speed: 2,
+    inputs: [],
+    pairState: [],
+    layers: [],
+    carry: [],
+    positions: [],
+    layout: 'butterfly',
+    motion: null,
+    boxProgress: 0,
+    boxAnimation: null,
+    diagnostics: { ok: true, messages: [] },
+    auto: { enabled: false, reverts: new Map() },
+    drag: null,
+    tickHandle: null
+  };
+
+  const clamp = (x, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const smoothstep = t => {
+    t = clamp(t);
+    return t * t * (3 - 2 * t);
+  };
+  const easeInOutCubic = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const dist = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
+  const pointLerp = (a, b, t) => ({ x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t) });
+  const fmt = x => Number(x.toFixed(3));
+  const esc = value => String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+
+  function rotR(x, k, n) {
+    k %= n;
+    if (k === 0) return x;
+    const mask = (1 << n) - 1;
+    return ((x >>> k) | (x << (n - k))) & mask;
+  }
+
+  function rotL(x, k, n) {
+    k %= n;
+    if (k === 0) return x;
+    const mask = (1 << n) - 1;
+    return ((x << k) | (x >>> (n - k))) & mask;
+  }
+
+  function geometry() {
+    const W = 1440;
+    const left = 122;
+    const right = 64;
+    const available = W - left - right;
+    const dx = Math.min(58, available / (state.N - 1));
+    const used = dx * (state.N - 1);
+    const x0 = left + (available - used) / 2;
+    const firstStageY = 174;
+    const stageGap = 126;
+    const routeProgress = smoothstep(clamp(state.boxProgress / 0.72));
+    const r = clamp(0.29 * dx, 6.8, 12.5);
+    const ioW = clamp(0.72 * dx, 14, 31);
+    const ioH = clamp(0.82 * dx, 20, 34);
+    const boxPad = Math.min(10, 0.35 * dx);
+    const boxHalfHeight = 32;
+
+    // Match the edge-to-edge routing space at the two outer layers to the
+    // corresponding space between successive switch rows / switch boxes.
+    const switchPortOffset = r / Math.SQRT2;
+    const effectiveHalfHeight = lerp(switchPortOffset, boxHalfHeight, routeProgress);
+    const inputY = firstStageY - stageGap + effectiveHalfHeight - ioH / 2;
+    const lastStageY = firstStageY + (state.n - 1) * stageGap;
+    const outputY = lastStageY + stageGap - effectiveHalfHeight + ioH / 2;
+    const H = outputY + ioH / 2 + 54;
+
+    return {
+      W, H, left, right, dx, x0, firstStageY, stageGap,
+      inputY, outputY, r, ioW, ioH, boxPad, boxHalfHeight,
+      routeProgress,
+      boxOpacity: smoothstep(clamp((state.boxProgress - 0.70) / 0.30)),
+      nodeOpacity: clamp(1.15 * routeProgress),
+      labelX: x0 - 78,
+      x: slot => x0 + slot * dx,
+      stageY: s => firstStageY + s * stageGap
+    };
+  }
+
+  function labelsForCurrentInput() {
+    const custom = Array.from(el.customLabels.value || '');
+    return Array.from({ length: state.N }, (_, i) => custom[i] ?? DEFAULT_LABELS[i] ?? String(i));
+  }
+
+  function binaryBit(value) {
+    return value === 1 ? 1 : 0;
+  }
+
+  function desiredAutoConfiguration() {
+    const saved = state.pairState.map(row => Uint8Array.from(row));
+    const desired = state.pairState.map(row => Uint8Array.from(row));
+    for (let s = 0; s < state.n; s++) {
+      recompute();
+      for (let q = 0; q < state.N / 2; q++) {
+        if (!state.carry[s][q].check) state.pairState[s][q] ^= 1;
+        desired[s][q] = state.pairState[s][q];
+      }
+    }
+    state.pairState = saved;
+    recompute();
+    return desired;
+  }
+
+  function forceAutoConfig(exceptKeys = new Set()) {
+    if (!state.auto.enabled) return;
+    const desired = desiredAutoConfiguration();
+    for (let s = 0; s < state.n; s++) {
+      for (let q = 0; q < state.N / 2; q++) {
+        if (!exceptKeys.has(`${s}:${q}`)) state.pairState[s][q] = desired[s][q];
+      }
+    }
+    recompute();
+  }
+
+  function clearAutoReverts() {
+    state.auto.reverts.clear();
+  }
+
+  function scheduleAutoRevert(s, q) {
+    if (!state.auto.enabled) return;
+    const key = `${s}:${q}`;
+    state.auto.reverts.set(key, performance.now() + 1000 / Math.max(0.25, state.speed));
+    ensureTick();
+  }
+
+  function resetNetwork(N) {
+    clearAutoReverts();
+    state.N = N;
+    state.n = Math.round(Math.log2(N));
+    const labels = labelsForCurrentInput();
+    state.inputs = Array.from({ length: N }, (_, j) => ({
+      value: j % 2 === 0 ? 1 : 0,
+      label: labels[j],
+      origin: j
+    }));
+    state.pairState = Array.from({ length: state.n }, () => new Uint8Array(N / 2));
+    state.motion = null;
+    state.boxAnimation = null;
+    state.layout = 'butterfly';
+    state.boxProgress = el.boxes.checked ? 1 : 0;
+
+    const g = geometry();
+    state.positions = Array.from({ length: state.n }, (_, s) =>
+      Array.from({ length: N }, (_, j) => ({ x: g.x(j), y: g.stageY(s) }))
+    );
+    recompute();
+    if (state.auto.enabled) forceAutoConfig();
+    render();
+  }
+
+  function recompute() {
+    state.layers = [state.inputs.map(sig => ({ ...sig }))];
+    for (let s = 0; s < state.n; s++) {
+      const input = state.layers[s];
+      const output = Array(state.N);
+      for (let q = 0; q < state.N / 2; q++) {
+        const j0 = rotL(2 * q, s, state.n);
+        const j1 = rotL(2 * q + 1, s, state.n);
+        if (state.pairState[s][q] === 0) {
+          output[j0] = { ...input[j0] };
+          output[j1] = { ...input[j1] };
+        } else {
+          output[j0] = { ...input[j1] };
+          output[j1] = { ...input[j0] };
+        }
+      }
+      state.layers.push(output);
+    }
+    computeCarryAndChecks();
+    runSelfTests();
+  }
+
+  function computeCarryAndChecks() {
+    state.carry = Array.from({ length: state.n }, () => Array(state.N / 2));
+    const boxCount = state.N / 2;
+
+    for (let s = 0; s < state.n; s++) {
+      const groupCount = 1 << s;
+      const groupLength = boxCount / groupCount;
+      const input = state.layers[s];
+
+      for (let group = 0; group < groupCount; group++) {
+        const start = group * groupLength;
+        const end = start + groupLength - 1;
+        let parity = 0;
+
+        for (let q = end; q >= start; q--) {
+          const j0 = rotL(2 * q, s, state.n);
+          const j1 = rotL(2 * q + 1, s, state.n);
+          const b0 = binaryBit(input[j0].value);
+          const b1 = binaryBit(input[j1].value);
+          const upperIn = parity;
+          const upperMid = parity ^ (b1 === 0 ? 1 : 0);
+          const upperOut = upperMid ^ (b0 === 0 ? 1 : 0);
+          const pass = state.pairState[s][q] === 0;
+          state.carry[s][q] = {
+            group, groupStart: start, groupEnd: end,
+            j0, j1, b0, b1,
+            upperIn, upperMid, upperOut,
+            lowerIn: 0, lowerMid: 0, lowerOut: 0,
+            mismatch: false,
+            check: (upperMid === 0) === pass
+          };
+          parity = upperOut;
+        }
+
+        let lower = 0;
+        for (let q = start; q <= end; q++) {
+          const c = state.carry[s][q];
+          c.lowerIn = lower;
+          c.lowerMid = lower ^ c.b0;
+          c.lowerOut = c.lowerMid ^ c.b1;
+          lower = c.lowerOut;
+        }
+
+        const mismatch = state.carry[s][start].upperMid !== state.carry[s][start].lowerMid;
+        for (let q = start; q <= end; q++) {
+          state.carry[s][q].mismatch = mismatch;
+        }
+      }
+    }
+  }
+
+  function runSelfTests() {
+    const errors = [];
+    for (let s = 0; s < state.n; s++) {
+      for (let j = 0; j < state.N; j++) {
+        if (rotL(rotR(j, s, state.n), s, state.n) !== j) {
+          errors.push(`rotation inverse failed at s=${s}, j=${j}`);
+        }
+        if (s + 1 < state.n && rotR(j, s + 1, state.n) !== rotR(rotR(j, s, state.n), 1, state.n)) {
+          errors.push(`unshuffle progression failed at s=${s}, j=${j}`);
+        }
+      }
+      for (let q = 0; q < state.N / 2; q++) {
+        const j0 = rotL(2 * q, s, state.n);
+        const j1 = rotL(2 * q + 1, s, state.n);
+        if ((j0 ^ j1) !== (1 << s)) {
+          errors.push(`pair dimension failed at s=${s}, q=${q}`);
+        }
+      }
+    }
+    for (let layer = 0; layer < state.layers.length; layer++) {
+      const origins = state.layers[layer].map(x => x.origin).sort((a, b) => a - b);
+      if (origins.length !== state.N || origins.some((x, i) => x !== i)) {
+        errors.push(`origin permutation failed at layer ${layer}`);
+      }
+    }
+    state.diagnostics = { ok: errors.length === 0, messages: errors };
+  }
+
+  function canonicalPosition(layout, s, j, g = geometry()) {
+    const physical = rotR(j, s, state.n);
+    let slot;
+    if (layout === 'butterfly') slot = j;
+    else if (layout === 'omega') slot = physical;
+    else if (layout === 'collapsed') slot = 2 * Math.floor(physical / 2) + 0.5;
+    else throw new Error(`Unknown layout: ${layout}`);
+    return { x: g.x(slot), y: g.stageY(s) };
+  }
+
+  function cubicPoint(path, t) {
+    const u = 1 - t;
+    return {
+      x: u * u * u * path.p0.x + 3 * u * u * t * path.c1.x + 3 * u * t * t * path.c2.x + t * t * t * path.p1.x,
+      y: u * u * u * path.p0.y + 3 * u * u * t * path.c1.y + 3 * u * t * t * path.c2.y + t * t * t * path.p1.y
+    };
+  }
+
+  function canonicalArc(s, j, start, end, reverseOffset = 0) {
+    const g = geometry();
+    const delta = Math.abs(end.x - start.x) / g.dx;
+    const lane = (11 * j + 7 * s) % 7;
+    const height = 12 + 9 * Math.sqrt(delta) + 2.2 * lane + reverseOffset;
+    const bias = ((((5 * j + 3 * s) % 5) - 2) * 0.025);
+    const c1t = clamp(0.28 + bias, 0.18, 0.40);
+    const c2t = clamp(0.72 + bias, 0.60, 0.82);
+    const direction = end.x >= start.x ? -1 : 1;
+    const bendY = lerp(start.y, end.y, 0.5) + direction * height;
+    return {
+      kind: 'cubic',
+      p0: { ...start },
+      c1: { x: lerp(start.x, end.x, c1t), y: bendY },
+      c2: { x: lerp(start.x, end.x, c2t), y: bendY + direction * 2.5 * (lane % 2) },
+      p1: { ...end }
+    };
+  }
+
+  function linePath(start, end) {
+    return { kind: 'line', p0: { ...start }, p1: { ...end } };
+  }
+
+  function pathPoint(path, t) {
+    return path.kind === 'cubic' ? cubicPoint(path, t) : pointLerp(path.p0, path.p1, t);
+  }
+
+  function pathSamples(path, count = 32) {
+    return Array.from({ length: count + 1 }, (_, i) => pathPoint(path, i / count));
+  }
+
+  function makeArcLengthLUT(path, count = 96) {
+    const lut = [{ t: 0, length: 0 }];
+    let total = 0;
+    let previous = pathPoint(path, 0);
+    for (let i = 1; i <= count; i++) {
+      const t = i / count;
+      const p = pathPoint(path, t);
+      total += dist(previous, p);
+      lut.push({ t, length: total });
+      previous = p;
+    }
+    return { lut, total };
+  }
+
+  function invertArcLength(lut, total, fraction) {
+    if (fraction <= 0 || total <= 0) return 0;
+    if (fraction >= 1) return 1;
+    const target = total * fraction;
+    let lo = 0;
+    let hi = lut.length - 1;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (lut[mid].length < target) lo = mid;
+      else hi = mid;
+    }
+    const a = lut[lo];
+    const b = lut[hi];
+    const f = b.length === a.length ? 0 : (target - a.length) / (b.length - a.length);
+    return lerp(a.t, b.t, f);
+  }
+
+  function motionProfile(distancePositions, requestedSpeed) {
+    const D = distancePositions;
+    const v = requestedSpeed;
+    if (D <= 0) return { total: 0, distanceAt: () => 0 };
+    if (D >= v * v) {
+      const accelDistance = 0.5 * v * v;
+      const cruiseTime = (D - v * v) / v;
+      const total = 2 * v + cruiseTime;
+      return {
+        total,
+        distanceAt(t) {
+          t = clamp(t, 0, total);
+          if (t < v) return 0.5 * t * t;
+          if (t < v + cruiseTime) return accelDistance + v * (t - v);
+          const remain = total - t;
+          return D - 0.5 * remain * remain;
+        }
+      };
+    }
+    const peakTime = Math.sqrt(D);
+    const total = 2 * peakTime;
+    return {
+      total,
+      distanceAt(t) {
+        t = clamp(t, 0, total);
+        if (t <= peakTime) return 0.5 * t * t;
+        const remain = total - t;
+        return D - 0.5 * remain * remain;
+      }
+    };
+  }
+
+  function trajectoryFor(s, j, start, end, useArc, reverseOffset, g) {
+    if (dist(start, end) < 0.01) return null;
+    const path = useArc ? canonicalArc(s, j, start, end, reverseOffset) : linePath(start, end);
+    const { lut, total } = makeArcLengthLUT(path);
+    const distancePositions = total / g.dx;
+    return {
+      s, j, path, lut, lengthPx: total, distancePositions,
+      profile: motionProfile(distancePositions, state.speed)
+    };
+  }
+
+  function beginMotionCycle(motion, now) {
+    const cycle = motion.cycles[motion.cycleIndex];
+    motion.startTime = now;
+    motion.trajectories = cycle.trajectories;
+    motion.cycleDuration = cycle.duration;
+  }
+
+  function updateMotion(now) {
+    if (!state.motion) return false;
+    const motion = state.motion;
+    const elapsed = (now - motion.startTime) / 1000;
+    let stillMoving = false;
+    for (const trajectory of motion.trajectories) {
+      const localTime = Math.min(elapsed, trajectory.profile.total);
+      const traveled = trajectory.profile.distanceAt(localTime);
+      const fraction = trajectory.distancePositions > 0 ? traveled / trajectory.distancePositions : 1;
+      const t = invertArcLength(trajectory.lut, trajectory.lengthPx, fraction);
+      state.positions[trajectory.s][trajectory.j] = pathPoint(trajectory.path, t);
+      if (elapsed < trajectory.profile.total) stillMoving = true;
+    }
+    if (motion.cycles && elapsed >= motion.cycleDuration) {
+      for (const trajectory of motion.trajectories) {
+        state.positions[trajectory.s][trajectory.j] = { ...trajectory.path.p1 };
+      }
+      motion.cycleIndex++;
+      if (motion.cycleIndex >= motion.cycles.length) {
+        state.layout = motion.targetLayout;
+        state.motion = null;
+        return false;
+      }
+      beginMotionCycle(motion, now);
+      return true;
+    }
+    if (!motion.cycles && !stillMoving) {
+      for (const trajectory of motion.trajectories) {
+        state.positions[trajectory.s][trajectory.j] = { ...trajectory.path.p1 };
+      }
+      state.layout = motion.targetLayout;
+      state.motion = null;
+      return false;
+    }
+    return motion.cycles ? true : stillMoving;
+  }
+
+  function startCyclicButterflyOmega(sourceLayout, targetLayout, now, g) {
+    const forward = sourceLayout === 'butterfly' && targetLayout === 'omega';
+    const reverse = sourceLayout === 'omega' && targetLayout === 'butterfly';
+    if (!forward && !reverse) return false;
+
+    const cycles = [];
+    const current = state.positions.map(row => row.map(p => ({ ...p })));
+    const oneCycleHold = 1 / Math.max(0.25, state.speed);
+
+    for (let c = 0; c < state.n; c++) {
+      const trajectories = [];
+      let duration = 0;
+      for (let s = 0; s < state.n; s++) {
+        // The canonical reverse-omega embedding for stage s is s successive
+        // one-bit unshuffles. Each cycle performs at most one of those steps;
+        // stages that have completed their required steps simply remain put.
+        const beforeRounds = forward ? Math.min(s, c) : Math.max(0, s - c);
+        const afterRounds  = forward ? Math.min(s, c + 1) : Math.max(0, s - c - 1);
+        if (beforeRounds === afterRounds) continue;
+        for (let j = 0; j < state.N; j++) {
+          const start = c === 0
+            ? { ...current[s][j] }
+            : { x: g.x(rotR(j, beforeRounds, state.n)), y: g.stageY(s) };
+          const end = { x: g.x(rotR(j, afterRounds, state.n)), y: g.stageY(s) };
+          const tr = trajectoryFor(s, j, start, end, true, reverse ? 4 : 0, g);
+          if (!tr) continue;
+          trajectories.push(tr);
+          duration = Math.max(duration, tr.profile.total);
+        }
+      }
+      // Keep exactly n visible cycles; an already-complete final cycle is a
+      // short hold rather than changing the final topology.
+      cycles.push({ trajectories, duration: Math.max(duration, oneCycleHold) });
+    }
+
+    state.motion = {
+      sourceLayout, targetLayout, cycles, cycleIndex: 0,
+      trajectories: [], startTime: now, cycleDuration: 0
+    };
+    beginMotionCycle(state.motion, now);
+    ensureTick();
+    return true;
+  }
+
+  function startLayout(targetLayout) {
+    const now = performance.now();
+    if (state.motion) updateMotion(now);
+    const sourceLayout = state.motion ? state.motion.sourceLayout : state.layout;
+    state.motion = null;
+    const g = geometry();
+
+    if (startCyclicButterflyOmega(sourceLayout, targetLayout, now, g)) return;
+
+    const trajectories = [];
+    for (let s = 0; s < state.n; s++) {
+      for (let j = 0; j < state.N; j++) {
+        const start = { ...state.positions[s][j] };
+        const end = canonicalPosition(targetLayout, s, j, g);
+        const tr = trajectoryFor(s, j, start, end, false, 0, g);
+        if (tr) trajectories.push(tr);
+      }
+    }
+
+    if (trajectories.length === 0) {
+      state.layout = targetLayout;
+      render();
+      return;
+    }
+
+    state.motion = {
+      sourceLayout,
+      targetLayout,
+      startTime: now,
+      trajectories
+    };
+    ensureTick();
+  }
+
+  function updateBoxAnimation(now) {
+    if (!state.boxAnimation) return false;
+    const a = state.boxAnimation;
+    const t = clamp((now - a.startTime) / a.durationMs);
+    state.boxProgress = lerp(a.from, a.to, easeInOutCubic(t));
+    if (t >= 1) {
+      state.boxProgress = a.to;
+      state.boxAnimation = null;
+      return false;
+    }
+    return true;
+  }
+
+  function startBoxAnimation(target) {
+    const now = performance.now();
+    if (state.boxAnimation) updateBoxAnimation(now);
+    const from = state.boxProgress;
+    if (Math.abs(target - from) < 0.001) {
+      state.boxProgress = target;
+      state.boxAnimation = null;
+      render();
+      return;
+    }
+    const durationSeconds = (0.34 + 1.15 / Math.max(0.25, state.speed)) * Math.abs(target - from);
+    state.boxAnimation = {
+      from, to: target, startTime: now,
+      durationMs: Math.max(120, durationSeconds * 1000)
+    };
+    ensureTick();
+  }
+
+  function updateAuto(now) {
+    if (!state.auto.enabled || state.auto.reverts.size === 0) return false;
+    const expired = [];
+    for (const [key, deadline] of state.auto.reverts) {
+      if (now >= deadline) expired.push(key);
+    }
+    if (expired.length) {
+      for (const key of expired) state.auto.reverts.delete(key);
+      forceAutoConfig(new Set(state.auto.reverts.keys()));
+    }
+    return state.auto.reverts.size > 0;
+  }
+
+  function setAutoConfig(enabled) {
+    state.auto.enabled = enabled;
+    clearAutoReverts();
+    if (enabled) forceAutoConfig();
+    render();
+  }
+
+  function ensureTick() {
+    if (state.tickHandle === null) state.tickHandle = requestAnimationFrame(tick);
+  }
+
+  function tick(now) {
+    state.tickHandle = null;
+    const moving = updateMotion(now);
+    const boxing = updateBoxAnimation(now);
+    const auto = updateAuto(now);
+    render(now);
+    if (moving || boxing || auto || state.motion || state.boxAnimation || state.auto.reverts.size) ensureTick();
+  }
+
+  function baseSamples(a, b) {
+    return [a, b];
+  }
+
+  function polylineD(points) {
+    if (points.length < 2) return '';
+    return `M${fmt(points[0].x)},${fmt(points[0].y)}` +
+      points.slice(1).map(p => `L${fmt(p.x)},${fmt(p.y)}`).join('');
+  }
+
+  function catmullRomCommands(points) {
+    let d = '';
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[Math.max(0, i - 1)];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[Math.min(points.length - 1, i + 2)];
+      const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 };
+      const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
+      d += `C${fmt(c1.x)},${fmt(c1.y)} ${fmt(c2.x)},${fmt(c2.y)} ${fmt(p2.x)},${fmt(p2.y)}`;
+    }
+    return d;
+  }
+
+  function smoothPolylineD(points) {
+    if (points.length < 2) return '';
+    return `M${fmt(points[0].x)},${fmt(points[0].y)}` + catmullRomCommands(points);
+  }
+
+  function wavyD(points, amplitude, wavelength) {
+    if (points.length < 2) return '';
+    const cumulative = [0];
+    let total = 0;
+    for (let i = 1; i < points.length; i++) {
+      total += dist(points[i - 1], points[i]);
+      cumulative.push(total);
+    }
+    if (total < 0.01) return '';
+
+    const out = [];
+    const sampleCount = Math.max(18, Math.ceil(total / 1.25));
+    const waveCount = Math.max(1, Math.round(total / wavelength));
+    let segment = 1;
+    for (let k = 0; k <= sampleCount; k++) {
+      const target = total * k / sampleCount;
+      while (segment < cumulative.length - 1 && cumulative[segment] < target) segment++;
+      const a = points[segment - 1];
+      const b = points[segment];
+      const span = cumulative[segment] - cumulative[segment - 1];
+      const f = span <= 0 ? 0 : (target - cumulative[segment - 1]) / span;
+      const p = pointLerp(a, b, f);
+      const tx = b.x - a.x;
+      const ty = b.y - a.y;
+      const len = Math.hypot(tx, ty) || 1;
+      const nx = -ty / len;
+      const ny = tx / len;
+      const t = target / total;
+      const envelope = Math.sin(Math.PI * t);
+      const offset = amplitude * envelope * Math.sin(2 * Math.PI * waveCount * t);
+      out.push({ x: p.x + nx * offset, y: p.y + ny * offset });
+    }
+    return smoothPolylineD(out);
+  }
+
+  function wigglyRectD(cx, cy, w, h, amplitude) {
+    const side = (a, b, nx, ny) => {
+      const length = dist(a, b);
+      const waves = Math.max(1, Math.round(length / 12));
+      const count = Math.max(14, waves * 10);
+      return Array.from({ length: count + 1 }, (_, i) => {
+        const t = i / count;
+        const envelope = Math.sin(Math.PI * t);
+        const wiggle = amplitude * envelope * Math.sin(2 * Math.PI * waves * t);
+        return { x: lerp(a.x, b.x, t) + nx * wiggle, y: lerp(a.y, b.y, t) + ny * wiggle };
+      });
+    };
+    const tl = { x: cx - w / 2, y: cy - h / 2 };
+    const tr = { x: cx + w / 2, y: cy - h / 2 };
+    const br = { x: cx + w / 2, y: cy + h / 2 };
+    const bl = { x: cx - w / 2, y: cy + h / 2 };
+    const sides = [
+      side(tl, tr, 0, -1),
+      side(tr, br, 1, 0),
+      side(br, bl, 0, 1),
+      side(bl, tl, -1, 0)
+    ];
+    return `M${fmt(tl.x)},${fmt(tl.y)}` + sides.map(catmullRomCommands).join('') + 'Z';
+  }
+
+  function starD(cx, cy, outer = 7, inner = 3.2, points = 8) {
+    const vertices = [];
+    for (let i = 0; i < points * 2; i++) {
+      const radius = i % 2 === 0 ? outer : inner;
+      const angle = -Math.PI / 2 + i * Math.PI / points;
+      vertices.push({ x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius });
+    }
+    return `M${fmt(vertices[0].x)},${fmt(vertices[0].y)}` +
+      vertices.slice(1).map(p => `L${fmt(p.x)},${fmt(p.y)}`).join('') + 'Z';
+  }
+
+  function visualGeometry(g) {
+    const switchGeom = Array.from({ length: state.n }, () => Array(state.N));
+    const d = g.r / Math.SQRT2;
+    for (let s = 0; s < state.n; s++) {
+      for (let j = 0; j < state.N; j++) {
+        const physical = rotR(j, s, state.n);
+        const side = physical & 1;
+        const center = state.positions[s][j];
+        switchGeom[s][j] = {
+          center,
+          side,
+          q: physical >> 1,
+          upperLeft: { x: center.x - d, y: center.y - d },
+          upperRight: { x: center.x + d, y: center.y - d },
+          output: { x: center.x + (side === 0 ? -d : d), y: center.y + d }
+        };
+      }
+    }
+
+    const inputPorts = Array.from({ length: state.N }, (_, j) => ({ x: g.x(j), y: g.inputY + g.ioH / 2 }));
+    const outputPorts = Array.from({ length: state.N }, (_, j) => ({ x: g.x(j), y: g.outputY - g.ioH / 2 }));
+    const stageInputNodes = Array.from({ length: state.n }, () => Array(state.N));
+    const stageOutputNodes = Array.from({ length: state.n }, () => Array(state.N));
+    const stageSources = Array.from({ length: state.n }, () => Array(state.N));
+    let sources = inputPorts;
+
+    for (let s = 0; s < state.n; s++) {
+      for (let j = 0; j < state.N; j++) {
+        stageSources[s][j] = sources[j];
+        const physical = rotR(j, s, state.n);
+        const fixedInput = { x: g.x(physical), y: g.stageY(s) - g.boxHalfHeight };
+        stageInputNodes[s][j] = pointLerp(sources[j], fixedInput, g.routeProgress);
+        const fixedOutput = { x: g.x(physical), y: g.stageY(s) + g.boxHalfHeight };
+        stageOutputNodes[s][j] = pointLerp(switchGeom[s][j].output, fixedOutput, g.routeProgress);
+      }
+      sources = stageOutputNodes[s];
+    }
+
+    return {
+      switchGeom, inputPorts, outputPorts,
+      stageInputNodes, stageOutputNodes, stageSources,
+      finalSources: sources
+    };
+  }
+
+  function boxBounds(g, q, s) {
+    const left = g.x(2 * q) - g.boxPad;
+    const right = g.x(2 * q + 1) + g.boxPad;
+    const top = g.stageY(s) - g.boxHalfHeight;
+    const bottom = g.stageY(s) + g.boxHalfHeight;
+    return { left, right, top, bottom, width: right - left, height: bottom - top, cx: (left + right) / 2 };
+  }
+
+  function bandSegment(x1, x2, y, h, parity, opacity, clipMin, clipMax, direction) {
+    const left = Math.max(Math.min(x1, x2), clipMin);
+    const right = Math.min(Math.max(x1, x2), clipMax);
+    if (right - left < 0.15) return '';
+    const crossed = parity !== 0;
+    const fill = crossed ? 'url(#crossStripes)' : 'url(#verticalStripes)';
+    const height = crossed ? 2 * h : h;
+    // Keep the edge nearest the boxes fixed. Cross-hatched sections protrude
+    // away from the boxes, making them exactly twice as thick.
+    const top = crossed && direction === 'up' ? y - h : y;
+    return `<rect x="${fmt(left)}" y="${fmt(top)}" width="${fmt(right - left)}" height="${fmt(height)}" fill="${fill}" opacity="${fmt(opacity)}"/>`;
+  }
+
+  function littleDirectionArrow(cx, y, direction, opacity) {
+    const sign = direction === 'left' ? -1 : 1;
+    const xTail = cx - sign * 4.4;
+    const xTip = cx + sign * 4.4;
+    const xHead = xTip - sign * 3.0;
+    return `<path d="M${fmt(xTail)},${fmt(y)}L${fmt(xTip)},${fmt(y)}M${fmt(xTip)},${fmt(y)}L${fmt(xHead)},${fmt(y - 2.4)}M${fmt(xTip)},${fmt(y)}L${fmt(xHead)},${fmt(y + 2.4)}" fill="none" stroke="#667181" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round" opacity="${fmt(opacity)}"/>`;
+  }
+
+
+  function renderWalls(g) {
+    if (!el.walls.checked) return '';
+    if (state.motion || (state.layout !== 'omega' && state.layout !== 'collapsed')) return '';
+
+    const boxCount = state.N / 2;
+    const amplitude = Math.max(2.2, Math.min(4.2, g.dx * 0.075));
+    const step = Math.max(5.5, Math.min(8.5, g.stageGap * 0.055));
+    let out = '';
+
+    for (let s = 0; s < state.n; s++) {
+      const groupLength = boxCount / (1 << s);
+      if (groupLength >= boxCount) continue;
+
+      const top = g.stageY(s) - g.boxHalfHeight - 2 * 7 - 4;
+      const bottom = g.stageY(s) + g.boxHalfHeight + 3;
+
+      for (let q = groupLength - 1; q < boxCount - 1; q += groupLength) {
+        const leftBox = boxBounds(g, q, s);
+        const rightBox = boxBounds(g, q + 1, s);
+        const x = (leftBox.right + rightBox.left) / 2;
+        const points = [];
+        let k = 0;
+        for (let y = top; y < bottom; y += step, k++) {
+          points.push(`${fmt(x + (k % 2 === 0 ? -amplitude : amplitude))},${fmt(y)}`);
+        }
+        const lastK = Math.ceil((bottom - top) / step);
+        points.push(`${fmt(x + (lastK % 2 === 0 ? -amplitude : amplitude))},${fmt(bottom)}`);
+        out += `<polyline points="${points.join(' ')}" fill="none" stroke="#111820" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>`;
+      }
+    }
+    return out;
+  }
+
+  function renderCarryBands(g) {
+    if (g.boxOpacity < 0.02) return '';
+    const showUpper = el.upper.checked;
+    const showLower = el.lower.checked;
+    if (!showUpper && !showLower) return '';
+
+    const h = 7;
+    const edgeGap = 1.6;
+    const arrowGap = edgeGap;
+    const endPastMidpoint = Math.min(10, 0.18 * g.dx);
+    const interBoxGap = Math.max(2, g.dx - 2 * g.boxPad);
+    let out = '';
+    const boxCount = state.N / 2;
+
+    for (let s = 0; s < state.n; s++) {
+      const groupCount = 1 << s;
+      const groupLength = boxCount / groupCount;
+      const boxTop = g.stageY(s) - g.boxHalfHeight;
+      const upperY = boxTop - edgeGap - h;
+      const lowerY = boxTop + edgeGap;
+      const upperArrowY = upperY - h - arrowGap - 2.4;
+      const lowerArrowY = lowerY + 2 * h + arrowGap + 2.4;
+
+      for (let group = 0; group < groupCount; group++) {
+        const start = group * groupLength;
+        const end = start + groupLength - 1;
+        const first = boxBounds(g, start, s);
+        const last = boxBounds(g, end, s);
+        const correction = el.stars.checked && state.carry[s][start].mismatch ? 1 : 0;
+
+        if (showUpper) {
+          // Flow starts at the right/LSB side, halfway through the gap from
+          // the preceding block, and stops just beyond the midpoint of the
+          // final (leftmost) block, before its last signal.
+          const clipMin = first.cx - endPastMidpoint;
+          const clipMax = last.right + interBoxGap / 2;
+          out += bandSegment(last.right, clipMax, upperY, h, state.carry[s][end].upperIn, g.boxOpacity, clipMin, clipMax, 'up');
+
+          for (let q = start; q <= end; q++) {
+            const c = state.carry[s][q];
+            const b = boxBounds(g, q, s);
+            const x0 = g.x(2 * q);
+            const x1 = g.x(2 * q + 1);
+            out += bandSegment(b.left, x0, upperY, h, c.upperOut, g.boxOpacity, clipMin, clipMax, 'up');
+            out += bandSegment(x0, x1, upperY, h, c.upperMid, g.boxOpacity, clipMin, clipMax, 'up');
+            out += bandSegment(x1, b.right, upperY, h, c.upperIn, g.boxOpacity, clipMin, clipMax, 'up');
+            if (q < end) {
+              const next = boxBounds(g, q + 1, s);
+              out += bandSegment(b.right, next.left, upperY, h, state.carry[s][q + 1].upperOut, g.boxOpacity, clipMin, clipMax, 'up');
+              out += littleDirectionArrow((b.right + next.left) / 2, upperArrowY, 'left', g.boxOpacity);
+            }
+          }
+          out += `<rect x="${fmt(clipMin)}" y="${fmt(upperY)}" width="${fmt(clipMax - clipMin)}" height="${fmt(h)}" rx="1.4" fill="none" stroke="#7f8794" stroke-width="0.75" opacity="${fmt(g.boxOpacity)}"/>`;
+        }
+
+        if (showLower) {
+          // Mirror the extent for left-to-right flow.
+          const clipMin = first.left - interBoxGap / 2;
+          const clipMax = last.cx + endPastMidpoint;
+          const firstCarry = state.carry[s][start].lowerIn;
+          out += bandSegment(clipMin, first.left, lowerY, h, firstCarry, g.boxOpacity, clipMin, clipMax, 'down');
+
+          for (let q = start; q <= end; q++) {
+            const c = state.carry[s][q];
+            const b = boxBounds(g, q, s);
+            const x0 = g.x(2 * q);
+            const x1 = g.x(2 * q + 1);
+            const before = q === start ? c.lowerIn : (c.lowerIn ^ correction);
+            const middle = c.lowerMid ^ correction;
+            const after = c.lowerOut ^ correction;
+            out += bandSegment(b.left, x0, lowerY, h, before, g.boxOpacity, clipMin, clipMax, 'down');
+            out += bandSegment(x0, x1, lowerY, h, middle, g.boxOpacity, clipMin, clipMax, 'down');
+            out += bandSegment(x1, b.right, lowerY, h, after, g.boxOpacity, clipMin, clipMax, 'down');
+            if (q < end) {
+              const next = boxBounds(g, q + 1, s);
+              out += bandSegment(b.right, next.left, lowerY, h, after, g.boxOpacity, clipMin, clipMax, 'down');
+              out += littleDirectionArrow((b.right + next.left) / 2, lowerArrowY, 'right', g.boxOpacity);
+            }
+          }
+          out += `<rect x="${fmt(clipMin)}" y="${fmt(lowerY)}" width="${fmt(clipMax - clipMin)}" height="${fmt(h)}" rx="1.4" fill="none" stroke="#7f8794" stroke-width="0.75" opacity="${fmt(g.boxOpacity)}"/>`;
+        }
+
+        if (showLower && el.stars.checked && state.carry[s][start].mismatch) {
+          // The correction belongs to the MSB-side signal of this carry block.
+          // Put the star exactly where that signal crosses the lower band.
+          const x = g.x(2 * start);
+          const y = lowerY + h / 2;
+          out += `<path d="${starD(x, y, Math.min(6.2, g.dx * 0.16), Math.min(2.8, g.dx * 0.072))}" fill="#ffe58a" stroke="#a77a00" stroke-width="1" opacity="${fmt(g.boxOpacity)}"/>`;
+        }
+      }
+    }
+    return out;
+  }
+
+  function renderGuides(g) {
+    const parts = [];
+    const addGuideSet = (from, to, reverseOffset, marker) => {
+      for (let s = 0; s < state.n; s++) {
+        for (let j = 0; j < state.N; j++) {
+          const a = canonicalPosition(from, s, j, g);
+          const b = canonicalPosition(to, s, j, g);
+          if (dist(a, b) < 0.01) continue;
+          const path = canonicalArc(s, j, a, b, reverseOffset);
+          parts.push(`<path d="${polylineD(pathSamples(path, 30))}" fill="none" stroke="#9aa3b2" stroke-width="1" stroke-dasharray="5 5" opacity="0.52" marker-end="url(#${marker})"/>`);
+        }
+      }
+    };
+
+    if (el.pairArcs.checked) {
+      for (let s = 0; s < state.n; s++) {
+        for (let q = 0; q < state.N / 2; q++) {
+          const j0 = rotL(2 * q, s, state.n);
+          const j1 = rotL(2 * q + 1, s, state.n);
+          const a = state.positions[s][j0];
+          const b = state.positions[s][j1];
+          const separation = dist(a, b);
+          if (separation < 0.5) continue;
+          const depth = 12 + 8 * Math.sqrt(separation / g.dx);
+          const control = { x: (a.x + b.x) / 2, y: Math.max(a.y, b.y) + depth };
+          parts.push(`<path d="M${fmt(a.x)},${fmt(a.y)}Q${fmt(control.x)},${fmt(control.y)} ${fmt(b.x)},${fmt(b.y)}" fill="none" stroke="#17945d" stroke-width="1.4" opacity="0.72"/>`);
+        }
+      }
+    }
+    return parts.join('');
+  }
+
+  function buildRoutePathData(g, vg) {
+    const amplitude = clamp(0.075 * g.dx, 1.15, 2.1);
+    const wavelength = clamp(0.90 * g.dx, 15, 28);
+    const inactiveParts = [], activeOneParts = [], activeZeroParts = [], activeTriParts = [];
+    const addActive = (a, b, value) => {
+      if (dist(a, b) < 0.05) return;
+      const d = value === 1 ? `M${fmt(a.x)},${fmt(a.y)}L${fmt(b.x)},${fmt(b.y)}` : wavyD([a, b], amplitude, wavelength);
+      if (!d) return;
+      (value === 2 ? activeTriParts : (value === 1 ? activeOneParts : activeZeroParts)).push(d);
+    };
+    const addInactive = (a, b) => {
+      if (dist(a, b) < 0.05) return;
+      inactiveParts.push(`M${fmt(a.x)},${fmt(a.y)}L${fmt(b.x)},${fmt(b.y)}`);
+    };
+    for (let s = 0; s < state.n; s++) {
+      const input = state.layers[s], output = state.layers[s + 1];
+      for (let j = 0; j < state.N; j++) addActive(vg.stageSources[s][j], vg.stageInputNodes[s][j], input[j].value);
+      for (let q = 0; q < state.N / 2; q++) {
+        const j0 = rotL(2*q, s, state.n), j1 = rotL(2*q+1, s, state.n);
+        const sw0 = vg.switchGeom[s][j0], sw1 = vg.switchGeom[s][j1];
+        const node0 = vg.stageInputNodes[s][j0], node1 = vg.stageInputNodes[s][j1];
+        const pass = state.pairState[s][q] === 0;
+        if (pass) {
+          addActive(node0, sw0.upperLeft, input[j0].value); addInactive(node1, sw0.upperRight);
+          addInactive(node0, sw1.upperLeft); addActive(node1, sw1.upperRight, input[j1].value);
+          addActive(sw0.upperLeft, sw0.output, output[j0].value); addInactive(sw0.upperRight, sw0.output);
+          addInactive(sw1.upperLeft, sw1.output); addActive(sw1.upperRight, sw1.output, output[j1].value);
+        } else {
+          addInactive(node0, sw0.upperLeft); addActive(node1, sw0.upperRight, input[j1].value);
+          addActive(node0, sw1.upperLeft, input[j0].value); addInactive(node1, sw1.upperRight);
+          addInactive(sw0.upperLeft, sw0.output); addActive(sw0.upperRight, sw0.output, output[j0].value);
+          addActive(sw1.upperLeft, sw1.output, output[j1].value); addInactive(sw1.upperRight, sw1.output);
+        }
+        addActive(sw0.output, vg.stageOutputNodes[s][j0], output[j0].value);
+        addActive(sw1.output, vg.stageOutputNodes[s][j1], output[j1].value);
+      }
+    }
+    const finalLayer = state.layers[state.n];
+    for (let j = 0; j < state.N; j++) addActive(vg.finalSources[j], vg.outputPorts[j], finalLayer[j].value);
+    return { inactiveD: inactiveParts.join(''), oneD: activeOneParts.join(''), zeroD: activeZeroParts.join(''), triD: activeTriParts.join('') };
+  }
+
+  function renderIOBox(g, x, y, signal, kind, j) {
+    const fontSize = clamp(g.dx * 0.25, 6.5, 11.5);
+    const bitSize = clamp(g.dx * 0.16, 5.5, 8.2);
+    const value = signal.value;
+    const tri = value === 2;
+    const glowStroke = tri ? '#c8ced8' : (value ? '#87d7ff' : '#ffc75e');
+    const coreStroke = tri ? '#727b89' : (value ? '#236f9d' : '#9a4a22');
+    const fill = tri ? '#f4f5f7' : (value ? '#f1fbff' : '#fff8e8');
+    const shape = value === 1
+      ? `<rect x="${fmt(x - g.ioW / 2)}" y="${fmt(y - g.ioH / 2)}" width="${fmt(g.ioW)}" height="${fmt(g.ioH)}" rx="1.3"/>`
+      : `<path d="${wigglyRectD(x, y, g.ioW, g.ioH, clamp(g.dx * 0.055, 0.8, 1.7))}"/>`;
+    const glow = shape.replace('/>', ` fill="${fill}" stroke="${glowStroke}" stroke-width="${tri ? 7.5 : 6}" opacity="${tri ? 0.58 : 0.42}"/>`);
+    const core = shape.replace('/>', ` fill="${fill}" stroke="${coreStroke}" stroke-width="1.4"/>`);
+    const sparkle = tri ? `<g opacity="0.95">
+      ${Array.from({length: 6}, (_, i) => {
+        const a = i * Math.PI / 3;
+        const px = x + Math.cos(a) * (g.ioW / 2 + 5.5);
+        const py = y + Math.sin(a) * (g.ioH / 2 + 5.5);
+        const delay = (i * 0.17).toFixed(2);
+        return `<g transform="translate(${fmt(px)} ${fmt(py)})"><path d="M-3 0H3M0-3V3M-2.1-2.1L2.1 2.1M-2.1 2.1L2.1-2.1" stroke="#aab2bf" stroke-width="0.9" stroke-linecap="round"><animate attributeName="opacity" values="0.15;1;0.15" dur="1.05s" begin="-${delay}s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="scale" values="0.65;1.3;0.65" dur="1.05s" begin="-${delay}s" repeatCount="indefinite"/></path></g>`;
+      }).join('')}
+    </g>` : '';
+    const textY = y + fontSize * 0.28;
+    const bitX = x + g.ioW / 2 - 2.2;
+    const bitY = y + g.ioH / 2 - 2.1;
+    const indexY = kind === 'input' ? y - g.ioH / 2 - 5 : y + g.ioH / 2 + 10;
+    const bitIndex = state.N - 1 - j;
+    const indexEven = (bitIndex & 1) === 0;
+    const indexX = indexEven ? x + g.ioW / 2 - 1.5 : x - g.ioW / 2 + 1.5;
+    const indexAnchor = indexEven ? 'end' : 'start';
+    return `${glow}${core}${sparkle}` +
+      `<text x="${fmt(x)}" y="${fmt(textY)}" text-anchor="middle" class="svg-label" font-size="${fmt(fontSize)}" font-weight="700">${esc(signal.label)}</text>` +
+      `<text x="${fmt(bitX)}" y="${fmt(bitY)}" text-anchor="end" class="svg-label" font-size="${fmt(bitSize)}" font-weight="800">${value === 2 ? 'X' : value}</text>` +
+      `<text x="${fmt(indexX)}" y="${fmt(indexY)}" text-anchor="${indexAnchor}" class="svg-label" font-size="${fmt(clamp(g.dx * 0.15, 6, 9))}" fill="#687487">${bitIndex}</text>`;
+  }
+
+  function fullRender(now = performance.now()) {
+    const g = geometry();
+    const vg = visualGeometry(g);
+    const { inactiveD, oneD, zeroD, triD } = buildRoutePathData(g, vg);
+
+    const finalLayer = state.layers[state.n];
+
+    const defs = `
+      <defs>
+        <filter id="sparkleGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <pattern id="verticalStripes" patternUnits="userSpaceOnUse" width="6" height="6">
+          <rect width="6" height="6" fill="#e6f6e9"/>
+          <path d="M1 0V6M4 0V6" stroke="#6f8f78" stroke-width="0.8"/>
+        </pattern>
+        <pattern id="crossStripes" patternUnits="userSpaceOnUse" width="7" height="7">
+          <rect width="7" height="7" fill="#f0e8fa"/>
+          <path d="M-2 2L2-2M0 7L7 0M5 9L9 5M-2 5L2 9M0 0L7 7M5-2L9 2" stroke="#85709c" stroke-width="0.7"/>
+        </pattern>
+        <marker id="arrowGray" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth">
+          <path d="M0 0L7 3.5L0 7Z" fill="#8e98a7"/>
+        </marker>
+      </defs>`;
+
+    let boxBack = '';
+    let switchBack = '';
+    let boxFront = '';
+    let switchFront = '';
+    let annotations = '';
+    let ioLayer = '';
+    let hits = '';
+
+    for (let s = 0; s < state.n; s++) {
+      for (let q = 0; q < state.N / 2; q++) {
+        const b = boxBounds(g, q, s);
+        boxBack += `<rect x="${fmt(b.left)}" y="${fmt(b.top)}" width="${fmt(b.width)}" height="${fmt(b.height)}" rx="9" fill="#ffffff" fill-opacity="${fmt(0.76 * g.boxOpacity)}" stroke="#667387" stroke-width="1.2" stroke-opacity="${fmt(g.boxOpacity)}"/>`;
+
+
+        if (el.checks.checked && g.boxOpacity > 0.05 && state.carry[s][q].check) {
+          const y = b.bottom - 9;
+          boxFront += `<path d="M${fmt(b.cx - 6)},${fmt(y)}L${fmt(b.cx - 1.5)},${fmt(y + 4)}L${fmt(b.cx + 7)},${fmt(y - 5)}" fill="none" stroke="#17945d" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity="${fmt(g.boxOpacity)}"/>`;
+        }
+
+        const j0 = rotL(2 * q, s, state.n);
+        const j1 = rotL(2 * q + 1, s, state.n);
+        for (const j of [j0, j1]) {
+          const nodeIn = vg.stageInputNodes[s][j];
+          const nodeOut = vg.stageOutputNodes[s][j];
+          const inputSig = state.layers[s][j];
+          const outputSig = state.layers[s + 1][j];
+          boxFront += `<circle cx="${fmt(nodeIn.x)}" cy="${fmt(nodeIn.y)}" r="2.7" fill="${inputSig.value === 2 ? '#aab2bf' : (inputSig.value ? '#236f9d' : '#9a4a22')}" stroke="white" stroke-width="0.8" opacity="${fmt(g.nodeOpacity)}"/>`;
+          boxFront += `<circle cx="${fmt(nodeOut.x)}" cy="${fmt(nodeOut.y)}" r="2.7" fill="${outputSig.value === 2 ? '#aab2bf' : (outputSig.value ? '#236f9d' : '#9a4a22')}" stroke="white" stroke-width="0.8" opacity="${fmt(g.nodeOpacity)}"/>`;
+        }
+
+        if (g.boxOpacity > 0.05) {
+          hits += `<rect class="hit" data-type="box" data-s="${s}" data-q="${q}" tabindex="0" role="button" aria-label="Stage ${s + 1}, box ${q}: toggle paired switches" x="${fmt(b.left)}" y="${fmt(b.top)}" width="${fmt(b.width)}" height="${fmt(b.height)}" rx="9"/>`;
+        }
+      }
+
+      for (let j = 0; j < state.N; j++) {
+        const sw = vg.switchGeom[s][j];
+        const selectedPort = (() => {
+          const q = sw.q;
+          const pass = state.pairState[s][q] === 0;
+          if (sw.side === 0) return pass ? sw.upperLeft : sw.upperRight;
+          return pass ? sw.upperRight : sw.upperLeft;
+        })();
+        const inactivePort = selectedPort === sw.upperLeft ? sw.upperRight : sw.upperLeft;
+        const outputSig = state.layers[s + 1][j];
+        const selectedInputJ = (() => {
+          const q = sw.q;
+          const j0 = rotL(2 * q, s, state.n);
+          const j1 = rotL(2 * q + 1, s, state.n);
+          const pass = state.pairState[s][q] === 0;
+          if (sw.side === 0) return pass ? j0 : j1;
+          return pass ? j1 : j0;
+        })();
+        const selectedSig = state.layers[s][selectedInputJ];
+
+        const selectedRel = { x: selectedPort.x - sw.center.x, y: selectedPort.y - sw.center.y };
+        const inactiveRel = { x: inactivePort.x - sw.center.x, y: inactivePort.y - sw.center.y };
+        const outputRel = { x: sw.output.x - sw.center.x, y: sw.output.y - sw.center.y };
+        const transform = `translate(${fmt(sw.center.x)} ${fmt(sw.center.y)})`;
+        switchBack += `<circle class="switch-back" transform="${transform}" cx="0" cy="0" r="${fmt(g.r)}" fill="white" fill-opacity="0.83"/>`;
+        switchFront += `<g class="switch-front" transform="${transform}">` +
+          `<circle cx="0" cy="0" r="${fmt(g.r)}" fill="none" stroke="#303b4d" stroke-width="1.35"/>` +
+          `<circle cx="${fmt(selectedRel.x)}" cy="${fmt(selectedRel.y)}" r="2.5" fill="${selectedSig.value === 2 ? '#aab2bf' : (selectedSig.value ? '#236f9d' : '#9a4a22')}" stroke="white" stroke-width="0.75"/>` +
+          `<circle cx="${fmt(inactiveRel.x)}" cy="${fmt(inactiveRel.y)}" r="2.35" fill="white" stroke="#8c96a8" stroke-width="1"/>` +
+          `<circle cx="${fmt(outputRel.x)}" cy="${fmt(outputRel.y)}" r="2.6" fill="${outputSig.value === 2 ? '#aab2bf' : (outputSig.value ? '#236f9d' : '#9a4a22')}" stroke="white" stroke-width="0.75"/>` +
+          `</g>`;
+
+        if (el.switchLabels.checked) {
+          const anchor = sw.side === 0 ? 'end' : 'start';
+          const x = sw.output.x + (sw.side === 0 ? -4.5 : 4.5);
+          annotations += `<text data-switch-label="1" data-s="${s}" data-j="${j}" x="${fmt(x)}" y="${fmt(sw.output.y + 2.8)}" text-anchor="${anchor}" class="svg-label" font-size="${fmt(clamp(g.dx * 0.16, 6.2, 9))}" font-weight="700">${esc(outputSig.label)}</text>`;
+        }
+
+        hits += `<circle class="hit" data-type="switch" data-s="${s}" data-j="${j}" tabindex="0" role="button" aria-label="Stage ${s + 1}, ${sw.side === 0 ? 'left' : 'right'} switch ${j}: click to toggle pair, drag to move" transform="${transform}" cx="0" cy="0" r="${fmt(g.r + 7)}"/>`;
+      }
+    }
+
+    const inputFont = clamp(g.dx * 0.18, 7, 10);
+    annotations += `<text x="${fmt(g.labelX)}" y="${fmt(g.inputY + 4)}" class="svg-label" font-size="12" font-weight="800">INPUT</text>`;
+    annotations += `<text x="${fmt(g.labelX)}" y="${fmt(g.outputY + 4)}" class="svg-label" font-size="12" font-weight="800">OUTPUT</text>`;
+    for (let s = 0; s < state.n; s++) {
+      annotations += `<text x="${fmt(g.labelX)}" y="${fmt(g.stageY(s) + 4)}" class="svg-label" font-size="12" font-weight="800">STAGE ${s + 1}</text>`;
+    }
+    annotations += `<text x="${fmt(g.x(0))}" y="${fmt(g.inputY - g.ioH / 2 - 18)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">MSB</text>`;
+    annotations += `<text x="${fmt(g.x(state.N - 1))}" y="${fmt(g.inputY - g.ioH / 2 - 18)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">LSB</text>`;
+    annotations += `<text x="${fmt(g.x(0))}" y="${fmt(g.outputY + g.ioH / 2 + 25)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">MSB</text>`;
+    annotations += `<text x="${fmt(g.x(state.N - 1))}" y="${fmt(g.outputY + g.ioH / 2 + 25)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">LSB</text>`;
+
+    for (let j = 0; j < state.N; j++) {
+      ioLayer += renderIOBox(g, g.x(j), g.inputY, state.inputs[j], 'input', j);
+      ioLayer += renderIOBox(g, g.x(j), g.outputY, finalLayer[j], 'output', j);
+      hits += `<rect class="hit" data-type="input" data-j="${j}" tabindex="0" role="button" aria-label="Input ${j}, value ${state.inputs[j].value === 2 ? 'X' : state.inputs[j].value}: toggle bit" x="${fmt(g.x(j) - g.ioW / 2 - 3)}" y="${fmt(g.inputY - g.ioH / 2 - 3)}" width="${fmt(g.ioW + 6)}" height="${fmt(g.ioH + 6)}" rx="3"/>`;
+    }
+
+    const mobile = window.matchMedia('(max-width: 760px)').matches;
+    const cropLeft = Math.max(0, g.x(0) - 105);
+    const cropRight = Math.min(g.W, g.x(state.N - 1) + 50);
+    // Leave a small amount of viewBox space above y=0.  The top MSB/LSB
+    // labels sit very close to the original upper boundary and their glyphs
+    // plus white outline otherwise get clipped in every canonical layout.
+    const topPad = 12;
+    if (mobile && state.N === 8) {
+      el.svg.setAttribute('viewBox', `${fmt(cropLeft)} ${-topPad} ${fmt(cropRight - cropLeft)} ${g.H + topPad}`);
+    } else {
+      el.svg.setAttribute('viewBox', `0 ${-topPad} ${g.W} ${g.H + topPad}`);
+    }
+    el.svg.dataset.n = String(state.N);
+    el.svg.innerHTML = defs +
+      `<g id="guides">${renderGuides(g)}</g>` +
+      `<g id="boxBacks">${boxBack}</g>` +
+      `<g id="carryBands">${renderCarryBands(g)}</g>` +
+      `<g id="walls">${renderWalls(g)}</g>` +
+      `<g id="switchBacks">${switchBack}</g>` +
+      `<g id="inactiveRoutes"><path d="${inactiveD}" fill="none" stroke="#8c96a8" stroke-width="1.35" stroke-dasharray="2.6 4.2" stroke-linecap="round" stroke-linejoin="round"/></g>` +
+      `<g id="signalGlows" fill="none" stroke-linecap="round" stroke-linejoin="round">` +
+        `<path d="${oneD}" stroke="#87d7ff" stroke-width="6.2" opacity="0.42"/>` +
+        `<path d="${zeroD}" stroke="#ffc75e" stroke-width="6.5" opacity="0.48"/>` +
+        `<path d="${triD}" stroke="#c8ced8" stroke-width="8.5" opacity="0.62" filter="url(#sparkleGlow)"/>` +
+      `</g>` +
+      `<g id="signalCores" fill="none" stroke-linecap="round" stroke-linejoin="round">` +
+        `<path d="${oneD}" stroke="#236f9d" stroke-width="1.65"/>` +
+        `<path d="${zeroD}" stroke="#9a4a22" stroke-width="1.65"/>` +
+        `<path d="${triD}" stroke="#727b89" stroke-width="1.65"/>` +
+      `</g>` +
+      `<g id="boxFronts">${boxFront}</g>` +
+      `<g id="switchFronts">${switchFront}</g>` +
+      `<g id="annotations">${annotations}</g>` +
+      `<g id="ioDecals">${ioLayer}</g>` +
+      `<g id="hitTargets">${hits}</g>`;
+
+    updateStatus();
+    updateLayoutButtons();
+  }
+
+  function motionCanvasContext(canvas, g) {
+    const rect = el.svg.getBoundingClientRect();
+    const vb = el.svg.viewBox.baseVal;
+    const nativeDpr = Math.min(1.5, Math.max(1, window.devicePixelRatio || 1));
+    const dpr = state.N >= 64 ? 0.75 : (state.N >= 32 ? Math.min(1, nativeDpr) : nativeDpr);
+    const cssW = Math.max(1, rect.width);
+    const cssH = Math.max(1, rect.height);
+    const width = Math.ceil(cssW * dpr);
+    const height = Math.ceil(cssH * dpr);
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    canvas.style.width = `${cssW}px`;
+    canvas.style.height = `${cssH}px`;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,width,height);
+    const sx = width / vb.width;
+    const sy = height / vb.height;
+    ctx.setTransform(sx,0,0,sy,-vb.x*sx,-vb.y*sy);
+    return ctx;
+  }
+
+  function prepareMotionOverlay() {
+    const overlay = el.motionOverlay;
+    const rect = el.svg.getBoundingClientRect();
+    overlay.setAttribute('viewBox', el.svg.getAttribute('viewBox'));
+    overlay.setAttribute('preserveAspectRatio', el.svg.getAttribute('preserveAspectRatio') || 'xMidYMid meet');
+    overlay.style.width = `${rect.width}px`;
+    overlay.style.height = `${rect.height}px`;
+    overlay.replaceChildren();
+    for (const id of ['boxFronts','annotations','ioDecals']) {
+      const source = el.svg.querySelector(`#${id}`);
+      if (source) overlay.appendChild(source.cloneNode(true));
+    }
+    overlay.querySelectorAll('text[data-switch-label="1"]').forEach(node => node.remove());
+  }
+
+  function deactivateMotionSurfaces() {
+    el.motionGuideCanvas.style.display='none';
+    el.motionCanvas.style.display='none';
+    el.motionOverlay.style.display='none';
+  }
+
+  function canvasCircle(ctx, x, y, r, fill, stroke = null, lineWidth = 1) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lineWidth; ctx.stroke(); }
+  }
+
+  function addCanvasWavy(path, a, b, amplitude, wavelength) {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const total = Math.hypot(dx, dy);
+    if (total < 0.05) return;
+    const nx = -dy / total, ny = dx / total;
+    const waveCount = Math.max(1, Math.round(total / wavelength));
+    const halfWaves = waveCount * 2;
+    path.moveTo(a.x, a.y);
+    for (let k = 0; k < halfWaves; k++) {
+      const t0 = k / halfWaves, t1 = (k + 1) / halfWaves, tm = (t0 + t1) / 2;
+      const ex = lerp(a.x, b.x, t1), ey = lerp(a.y, b.y, t1);
+      const mx = lerp(a.x, b.x, tm), my = lerp(a.y, b.y, tm);
+      const offset = 2 * amplitude * Math.sin(Math.PI * tm) * ((k & 1) ? -1 : 1);
+      path.quadraticCurveTo(mx + nx * offset, my + ny * offset, ex, ey);
+    }
+  }
+
+  function buildCanvasRoutePaths(g, vg) {
+    const amplitude = clamp(0.075 * g.dx, 1.15, 2.1);
+    const wavelength = clamp(0.90 * g.dx, 15, 28);
+    const inactive = new Path2D(), one = new Path2D(), zero = new Path2D(), tri = new Path2D();
+    const addInactive = (a, b) => {
+      if (dist(a, b) < 0.05) return;
+      inactive.moveTo(a.x, a.y); inactive.lineTo(b.x, b.y);
+    };
+    const addActive = (a, b, value) => {
+      if (dist(a, b) < 0.05) return;
+      const path = value === 2 ? tri : (value === 1 ? one : zero);
+      if (value === 1) { path.moveTo(a.x, a.y); path.lineTo(b.x, b.y); }
+      else addCanvasWavy(path, a, b, amplitude, wavelength);
+    };
+    for (let s = 0; s < state.n; s++) {
+      const input = state.layers[s], output = state.layers[s + 1];
+      for (let j = 0; j < state.N; j++) addActive(vg.stageSources[s][j], vg.stageInputNodes[s][j], input[j].value);
+      for (let q = 0; q < state.N / 2; q++) {
+        const j0 = rotL(2*q, s, state.n), j1 = rotL(2*q+1, s, state.n);
+        const sw0 = vg.switchGeom[s][j0], sw1 = vg.switchGeom[s][j1];
+        const node0 = vg.stageInputNodes[s][j0], node1 = vg.stageInputNodes[s][j1];
+        const pass = state.pairState[s][q] === 0;
+        if (pass) {
+          addActive(node0, sw0.upperLeft, input[j0].value); addInactive(node1, sw0.upperRight);
+          addInactive(node0, sw1.upperLeft); addActive(node1, sw1.upperRight, input[j1].value);
+          addActive(sw0.upperLeft, sw0.output, output[j0].value); addInactive(sw0.upperRight, sw0.output);
+          addInactive(sw1.upperLeft, sw1.output); addActive(sw1.upperRight, sw1.output, output[j1].value);
+        } else {
+          addInactive(node0, sw0.upperLeft); addActive(node1, sw0.upperRight, input[j1].value);
+          addActive(node0, sw1.upperLeft, input[j0].value); addInactive(node1, sw1.upperRight);
+          addInactive(sw0.upperLeft, sw0.output); addActive(sw0.upperRight, sw0.output, output[j0].value);
+          addActive(sw1.upperLeft, sw1.output, output[j1].value); addInactive(sw1.upperRight, sw1.output);
+        }
+        addActive(sw0.output, vg.stageOutputNodes[s][j0], output[j0].value);
+        addActive(sw1.output, vg.stageOutputNodes[s][j1], output[j1].value);
+      }
+    }
+    const finalLayer = state.layers[state.n];
+    for (let j = 0; j < state.N; j++) addActive(vg.finalSources[j], vg.outputPorts[j], finalLayer[j].value);
+    return { inactive, one, zero, tri };
+  }
+
+  function drawMotionGuides(ctx, g) {
+    if (!el.pairArcs.checked) return;
+    ctx.save();
+    ctx.strokeStyle = '#17945d';
+    ctx.lineWidth = 1.4;
+    ctx.globalAlpha = 0.72;
+    for (let s = 0; s < state.n; s++) for (let q = 0; q < state.N / 2; q++) {
+      const j0 = rotL(2*q, s, state.n), j1 = rotL(2*q+1, s, state.n);
+      const a = state.positions[s][j0], b = state.positions[s][j1];
+      const separation = dist(a, b);
+      if (separation < 0.5) continue;
+      const depth = 12 + 8 * Math.sqrt(separation / g.dx);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.quadraticCurveTo((a.x+b.x)/2, Math.max(a.y,b.y)+depth, b.x, b.y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawMotionBack(ctx, g, vg) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.83)';
+    for (let s=0;s<state.n;s++) for (let j=0;j<state.N;j++) {
+      const c=vg.switchGeom[s][j].center;
+      ctx.beginPath(); ctx.arc(c.x,c.y,g.r,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+
+    const paths = buildCanvasRoutePaths(g, vg);
+    ctx.save();
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.setLineDash([2.6,4.2]); ctx.strokeStyle='#8c96a8'; ctx.lineWidth=1.35; ctx.globalAlpha=1; ctx.stroke(paths.inactive);
+    ctx.setLineDash([]);
+    ctx.globalAlpha=0.42; ctx.strokeStyle='#87d7ff'; ctx.lineWidth=6.2; ctx.stroke(paths.one);
+    ctx.globalAlpha=0.48; ctx.strokeStyle='#ffc75e'; ctx.lineWidth=6.5; ctx.stroke(paths.zero);
+    ctx.globalAlpha=0.62; ctx.strokeStyle='#c8ced8'; ctx.lineWidth=8.5; ctx.shadowColor='#c8ced8'; ctx.shadowBlur=2.2; ctx.stroke(paths.tri);
+    ctx.shadowBlur=0; ctx.globalAlpha=1;
+    ctx.strokeStyle='#236f9d'; ctx.lineWidth=1.65; ctx.stroke(paths.one);
+    ctx.strokeStyle='#9a4a22'; ctx.stroke(paths.zero);
+    ctx.strokeStyle='#727b89'; ctx.stroke(paths.tri);
+    ctx.restore();
+  }
+
+  function drawMotionFront(ctx, g, vg) {
+    ctx.save();
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    for (let s=0;s<state.n;s++) for (let j=0;j<state.N;j++) {
+      const sw=vg.switchGeom[s][j], pass=state.pairState[s][sw.q]===0;
+      const selectedPort = sw.side===0 ? (pass?sw.upperLeft:sw.upperRight) : (pass?sw.upperRight:sw.upperLeft);
+      const inactivePort = selectedPort===sw.upperLeft ? sw.upperRight : sw.upperLeft;
+      const j0=rotL(2*sw.q,s,state.n), j1=rotL(2*sw.q+1,s,state.n);
+      const selectedInputJ = sw.side===0 ? (pass?j0:j1) : (pass?j1:j0);
+      const selectedSig=state.layers[s][selectedInputJ], outputSig=state.layers[s+1][j];
+      canvasCircle(ctx,sw.center.x,sw.center.y,g.r,null,'#303b4d',1.35);
+      const selectedColor=selectedSig.value===2?'#aab2bf':(selectedSig.value?'#236f9d':'#9a4a22');
+      const outputColor=outputSig.value===2?'#aab2bf':(outputSig.value?'#236f9d':'#9a4a22');
+      canvasCircle(ctx,selectedPort.x,selectedPort.y,2.5,selectedColor,'white',0.75);
+      canvasCircle(ctx,inactivePort.x,inactivePort.y,2.35,'white','#8c96a8',1);
+      canvasCircle(ctx,sw.output.x,sw.output.y,2.6,outputColor,'white',0.75);
+      if (el.switchLabels.checked) {
+        const size=clamp(g.dx*0.16,6.2,9);
+        const x=sw.output.x+(sw.side===0?-4.5:4.5), y=sw.output.y+2.8;
+        ctx.font=`700 ${size}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+        ctx.textAlign=sw.side===0?'right':'left'; ctx.textBaseline='alphabetic';
+        ctx.lineWidth=2.4; ctx.strokeStyle='white'; ctx.strokeText(outputSig.label,x,y);
+        ctx.fillStyle='#263246'; ctx.fillText(outputSig.label,x,y);
+      }
+    }
+    ctx.restore();
+  }
+
+  function renderMotionFrame(now = performance.now()) {
+    if (!state.motion || state.boxAnimation || (state.boxProgress > 0.001 && state.boxProgress < 0.999) || typeof Path2D === 'undefined') return false;
+    const g=geometry(), vg=visualGeometry(g);
+    const switchHits=el.svg.querySelectorAll('#hitTargets .hit[data-type="switch"]');
+    if (!el.motionGuideCanvas || !el.motionCanvas || !el.motionOverlay || switchHits.length!==state.n*state.N) return false;
+
+    for (const selector of ['#switchBacks','#inactiveRoutes','#signalGlows','#signalCores','#switchFronts']) {
+      const node=el.svg.querySelector(selector); if (node) node.style.visibility='hidden';
+    }
+    const guides=el.svg.querySelector('#guides'); if (guides) guides.style.visibility='hidden';
+    if (el.motionCanvas.style.display !== 'block') prepareMotionOverlay();
+    el.motionGuideCanvas.style.display='block';
+    el.motionCanvas.style.display='block';
+    el.motionOverlay.style.display='block';
+
+    drawMotionGuides(motionCanvasContext(el.motionGuideCanvas,g),g);
+    const ctx = motionCanvasContext(el.motionCanvas,g);
+    drawMotionBack(ctx,g,vg);
+    drawMotionFront(ctx,g,vg);
+
+    for (const hit of switchHits) hit.style.pointerEvents='none';
+    const statusKey = state.motion.cycles ? state.motion.cycleIndex : -1;
+    if (state.motion.lastStatusKey !== statusKey) {
+      state.motion.lastStatusKey = statusKey;
+      updateStatus();
+      updateLayoutButtons();
+    }
+    return true;
+  }
+
+  function render(now = performance.now()) {
+    if (renderMotionFrame(now)) return;
+    deactivateMotionSurfaces();
+    fullRender(now);
+  }
+
+  function updateLayoutButtons() {
+    const effective = state.motion ? state.motion.targetLayout : state.layout;
+    for (const [button, name] of [[el.butterfly, 'butterfly'], [el.omega, 'omega'], [el.collapsed, 'collapsed']]) {
+      const active = effective === name;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    }
+  }
+
+  function updateStatus() {
+    const layoutNames = {
+      butterfly: 'reverse butterfly',
+      omega: 'reverse omega grid',
+      collapsed: 'collapsed 2×2',
+      custom: 'custom dragged layout'
+    };
+    const layoutText = state.motion
+      ? `moving ${layoutNames[state.motion.sourceLayout] || state.motion.sourceLayout} → ${layoutNames[state.motion.targetLayout]}${state.motion.cycles ? ` (cycle ${state.motion.cycleIndex + 1}/${state.motion.cycles.length})` : ''}`
+      : (layoutNames[state.layout] || state.layout);
+    const checks = state.carry.flat().filter(c => c.check).length;
+    const totalChecks = state.n * state.N / 2;
+    const fields = [
+      `N=${state.N}`,
+      `stages=${state.n}`,
+      `layout=${layoutText}`,
+      `auto=${state.auto.enabled ? (state.auto.reverts.size ? `${state.auto.reverts.size} temporary override${state.auto.reverts.size === 1 ? '' : 's'}` : 'on') : 'off'}`,
+      `self-test=${state.diagnostics.ok ? 'PASS' : 'FAIL'}`
+    ];
+    if (el.checks.checked) fields.push(`checks=${checks}/${totalChecks}`);
+    el.status.textContent = fields.join('  ·  ');
+  }
+
+  function applyLabels() {
+    const labels = labelsForCurrentInput();
+    for (let j = 0; j < state.N; j++) state.inputs[j].label = labels[j];
+    recompute();
+    render();
+  }
+
+  function setInputPattern(kind) {
+    for (let j = 0; j < state.N; j++) {
+      if (kind === 'all1') state.inputs[j].value = 1;
+      else if (kind === 'all0') state.inputs[j].value = 0;
+      else if (kind === 'alternating') state.inputs[j].value = (j % 2 === 0 ? 1 : 0);
+      else if (kind === 'random') state.inputs[j].value = Math.random() < 0.5 ? 0 : 1;
+    }
+    recompute();
+    if (state.auto.enabled) {
+      clearAutoReverts();
+      forceAutoConfig();
+    }
+    render();
+  }
+
+  function toggleInput(j, manual = true) {
+    if (j === 0) state.inputs[j].value = state.inputs[j].value === 1 ? 0 : (state.inputs[j].value === 0 ? 2 : 1);
+    else state.inputs[j].value ^= 1;
+    recompute();
+    if (state.auto.enabled) {
+      clearAutoReverts();
+      forceAutoConfig();
+    }
+    render();
+  }
+
+  function togglePair(s, q, manual = true) {
+    state.pairState[s][q] ^= 1;
+    recompute();
+    if (manual && state.auto.enabled) scheduleAutoRevert(s, q);
+    render();
+  }
+
+  function setAllSwitches(mode) {
+    clearAutoReverts();
+    for (let s = 0; s < state.n; s++) {
+      for (let q = 0; q < state.N / 2; q++) {
+        if (mode === 'reset') state.pairState[s][q] = 0;
+        else if (mode === 'toggle') state.pairState[s][q] ^= 1;
+      }
+    }
+    recompute();
+    if (state.auto.enabled) forceAutoConfig();
+    render();
+  }
+
+  function svgPoint(event) {
+    const p = el.svg.createSVGPoint();
+    p.x = event.clientX;
+    p.y = event.clientY;
+    const matrix = el.svg.getScreenCTM();
+    return matrix ? p.matrixTransform(matrix.inverse()) : { x: event.offsetX, y: event.offsetY };
+  }
+
+  function hitTestMovingSwitch(point) {
+    if (!state.motion) return null;
+    const g = geometry();
+    const radius = g.r + 7;
+    let best = null, bestDistance = radius;
+    for (let s = state.n - 1; s >= 0; s--) {
+      for (let j = state.N - 1; j >= 0; j--) {
+        const d = dist(point, state.positions[s][j]);
+        if (d <= bestDistance) { bestDistance = d; best = { s, j }; }
+      }
+    }
+    return best;
+  }
+
+  el.svg.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    const point = svgPoint(event);
+    const movingSwitch = hitTestMovingSwitch(point);
+    const target = movingSwitch ? null : event.target.closest('.hit');
+    if (!movingSwitch && !target) return;
+    event.preventDefault();
+    const type = movingSwitch ? 'switch' : target.dataset.type;
+    el.svg.setPointerCapture(event.pointerId);
+
+    if (type === 'switch') {
+      if (state.motion) updateMotion(performance.now());
+      state.motion = null;
+      const s = movingSwitch ? movingSwitch.s : Number(target.dataset.s);
+      const j = movingSwitch ? movingSwitch.j : Number(target.dataset.j);
+      state.drag = {
+        pointerId: event.pointerId,
+        type, s, j,
+        startPointer: point,
+        startPosition: { ...state.positions[s][j] },
+        moved: false
+      };
+    } else {
+      state.drag = {
+        pointerId: event.pointerId,
+        type,
+        j: target.dataset.j === undefined ? undefined : Number(target.dataset.j),
+        s: target.dataset.s === undefined ? undefined : Number(target.dataset.s),
+        q: target.dataset.q === undefined ? undefined : Number(target.dataset.q),
+        startPointer: point,
+        moved: false
+      };
+    }
+  });
+
+  el.svg.addEventListener('pointermove', event => {
+    const drag = state.drag;
+    if (!drag || drag.pointerId !== event.pointerId || drag.type !== 'switch') return;
+    const point = svgPoint(event);
+    const dx = point.x - drag.startPointer.x;
+    const dy = point.y - drag.startPointer.y;
+    if (!drag.moved && Math.hypot(dx, dy) > 3) drag.moved = true;
+    if (!drag.moved) return;
+
+    const proposed = { x: drag.startPosition.x + dx, y: drag.startPosition.y + dy };
+    const mate = drag.j ^ (1 << drag.s);
+    const matePosition = state.positions[drag.s][mate];
+    const g = geometry();
+    const centerDistance = dist(proposed, matePosition);
+    const overlapFraction = (() => {
+      if (centerDistance <= 0) return 1;
+      if (centerDistance >= 2 * g.r) return 0;
+      const ratio = centerDistance / (2 * g.r);
+      const overlapArea = 2 * g.r * g.r * Math.acos(ratio) -
+        0.5 * centerDistance * Math.sqrt(Math.max(0, 4 * g.r * g.r - centerDistance * centerDistance));
+      return overlapArea / (Math.PI * g.r * g.r);
+    })();
+    if (overlapFraction >= 0.5) {
+      proposed.x = matePosition.x;
+      proposed.y = matePosition.y;
+    }
+    state.positions[drag.s][drag.j] = proposed;
+    state.layout = 'custom';
+    render();
+  });
+
+  function finishPointer(event, cancelled = false) {
+    const drag = state.drag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (el.svg.hasPointerCapture(event.pointerId)) el.svg.releasePointerCapture(event.pointerId);
+    state.drag = null;
+    if (cancelled) return;
+
+    if (drag.type === 'switch') {
+      if (!drag.moved) {
+        const physical = rotR(drag.j, drag.s, state.n);
+        togglePair(drag.s, physical >> 1, true);
+      } else {
+        state.layout = 'custom';
+        render();
+      }
+    } else if (!drag.moved) {
+      if (drag.type === 'input') toggleInput(drag.j, true);
+      else if (drag.type === 'box') togglePair(drag.s, drag.q, true);
+    }
+  }
+
+  el.svg.addEventListener('pointerup', event => finishPointer(event, false));
+  el.svg.addEventListener('pointercancel', event => finishPointer(event, true));
+
+  el.svg.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const target = event.target.closest('.hit');
+    if (!target) return;
+    event.preventDefault();
+    const type = target.dataset.type;
+    if (type === 'input') toggleInput(Number(target.dataset.j), true);
+    else if (type === 'box') togglePair(Number(target.dataset.s), Number(target.dataset.q), true);
+    else if (type === 'switch') {
+      const s = Number(target.dataset.s);
+      const j = Number(target.dataset.j);
+      togglePair(s, rotR(j, s, state.n) >> 1, true);
+    }
+  });
+
+  el.nSelect.addEventListener('change', () => resetNetwork(Number(el.nSelect.value)));
+  el.speed.addEventListener('input', () => {
+    state.speed = Number(el.speed.value);
+  
+  let resizeTimer = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(render, 80);
+  });
+
+  el.speedValue.textContent = `${state.speed.toFixed(2)} positions/s`;
+    updateStatus();
+  });
+  el.butterfly.addEventListener('click', () => startLayout('butterfly'));
+  el.omega.addEventListener('click', () => startLayout('omega'));
+  el.collapsed.addEventListener('click', () => startLayout('collapsed'));
+  el.auto.addEventListener('change', () => setAutoConfig(el.auto.checked));
+  el.inputsAll1.addEventListener('click', () => setInputPattern('all1'));
+  el.inputsAll0.addEventListener('click', () => setInputPattern('all0'));
+  el.inputsAlternating.addEventListener('click', () => setInputPattern('alternating'));
+  el.inputsRandom.addEventListener('click', () => setInputPattern('random'));
+  el.resetSwitches.addEventListener('click', () => setAllSwitches('reset'));
+  el.toggleAllSwitches.addEventListener('click', () => setAllSwitches('toggle'));
+  el.applyLabels.addEventListener('click', applyLabels);
+  el.customLabels.addEventListener('keydown', event => {
+    if (event.key === 'Enter') applyLabels();
+  });
+  el.boxes.addEventListener('change', () => startBoxAnimation(el.boxes.checked ? 1 : 0));
+  for (const checkbox of [el.upper, el.lower, el.walls, el.stars, el.checks, el.switchLabels, el.pairArcs]) {
+    checkbox.addEventListener('change', () => render());
+  }
+
+  window.__reverseNetworkWidget = {
+    getState() {
+      return {
+        N: state.N,
+        n: state.n,
+        speed: state.speed,
+        layout: state.layout,
+        movingTo: state.motion?.targetLayout ?? null,
+        boxProgress: state.boxProgress,
+        auto: { enabled: state.auto.enabled, reverts: Array.from(state.auto.reverts.entries()) },
+        inputs: state.inputs.map(x => ({ ...x })),
+        pairState: state.pairState.map(row => Array.from(row)),
+        positions: state.positions.map(row => row.map(point => ({ ...point }))),
+        outputs: state.layers[state.n].map(x => ({ ...x })),
+        checks: state.carry.map(row => row.map(c => c.check)),
+        diagnostics: { ...state.diagnostics, messages: [...state.diagnostics.messages] }
+      };
+    },
+    diagnostics: () => ({ ...state.diagnostics, messages: [...state.diagnostics.messages] }),
+    setN(N) {
+      if (![8, 16, 32, 64].includes(N)) throw new RangeError('N must be 8, 16, 32, or 64');
+      el.nSelect.value = String(N);
+      resetNetwork(N);
+    },
+    setLayout: startLayout,
+    toggleInput,
+    togglePair,
+    recompute() { recompute(); render(); },
+    render
+  };
+
+
+  let resizeTimer = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(render, 80);
+  });
+
+  el.speedValue.textContent = `${state.speed.toFixed(2)} positions/s`;
+  resetNetwork(8);
+})();
+</script>
+</body>
+</html>
