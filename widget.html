@@ -483,7 +483,7 @@
     const inputY = firstStageY - stageGap + effectiveHalfHeight - ioH / 2;
     const lastStageY = firstStageY + (state.n - 1) * stageGap;
     const outputY = lastStageY + stageGap - effectiveHalfHeight + ioH / 2;
-    const H = (outputY + ioH / 2 + 54) + (el.generalizedShuffle && el.generalizedShuffle.checked ? 28 : 0);
+    const H = outputY + ioH / 2 + 54;
 
     return {
       W, H, left, right, dx, x0, firstStageY, stageGap,
@@ -1773,9 +1773,10 @@
       for (let s = 0; s < state.n; s++) {
         annotations += permutationGadget(gadgetX, g.stageY(s) + g.r + 24, generalizedShuffleString(s), String(s), g);
       }
-      // Place the OUTPUT gadget below the OUTPUT decal and its MSB/LSB labels,
-      // mirroring the below-layer convention without overlapping annotations.
-      annotations += permutationGadget(gadgetX, g.outputY + g.ioH / 2 + 70, generalizedShuffleString('output'), 'output', g);
+      // Mirror the INPUT gadget placement: immediately below the OUTPUT layer,
+      // at the left-side annotation column. The centered MSB/LSB labels are
+      // horizontally separate and therefore do not require extra vertical gap.
+      annotations += permutationGadget(gadgetX, g.outputY + g.ioH / 2 + 22, generalizedShuffleString('output'), 'output', g);
     }
     annotations += `<text x="${fmt(g.x(0))}" y="${fmt(g.inputY - g.ioH / 2 - 18)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">MSB</text>`;
     annotations += `<text x="${fmt(g.x(state.N - 1))}" y="${fmt(g.inputY - g.ioH / 2 - 18)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">LSB</text>`;
