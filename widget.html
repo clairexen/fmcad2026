@@ -285,6 +285,7 @@
     <label><input id="showUpperCarry" type="checkbox"> LSB→MSB zero-toggling band</label>
     <label><input id="showLowerCarry" type="checkbox"> MSB→LSB one-toggling band</label>
     <label><input id="showWalls" type="checkbox"> Walls</label>
+    <label><input id="showGeneralizedShuffle" type="checkbox"> Identify Shuffles</label>
     <label><input id="showStars" type="checkbox"> Correction stars</label>
     <label><input id="showChecks" type="checkbox"> Checkmarks</label>
     <label><input id="showSwitchLabels" type="checkbox"> Switch-output labels</label>
@@ -294,7 +295,8 @@
   <div class="input-presets" aria-label="Layout and input patterns">
     <button id="layoutButterfly" type="button">1 · Reverse butterfly</button>
     <button id="layoutOmega" type="button">2 · Reverse omega</button>
-    <button id="layoutCollapsed" type="button">3 · Collapsed 2×2</button>
+    <button id="layoutRNetwork" type="button">3 · R-Network</button>
+    <button id="collapsePairs" type="button">(Un-)Collapse</button>
     <span class="preset-separator" aria-hidden="true"></span>
     <label class="caption">Set inputs</label>
     <button id="inputsAll1" type="button">All 1</button>
@@ -348,7 +350,8 @@
     stageSpacingValue: document.getElementById('stageSpacingValue'),
     butterfly: document.getElementById('layoutButterfly'),
     omega: document.getElementById('layoutOmega'),
-    collapsed: document.getElementById('layoutCollapsed'),
+    rnetwork: document.getElementById('layoutRNetwork'),
+    collapsePairs: document.getElementById('collapsePairs'),
     auto: document.getElementById('autoConfig'),
     customLabels: document.getElementById('customLabels'),
     applyLabels: document.getElementById('applyLabels'),
@@ -361,6 +364,7 @@
     switchLabels: document.getElementById('showSwitchLabels'),
     shades: document.getElementById('showSignalShades'),
     pairArcs: document.getElementById('showPairArcs'),
+    generalizedShuffle: document.getElementById('showGeneralizedShuffle'),
     inputsAll1: document.getElementById('inputsAll1'),
     inputsAll0: document.getElementById('inputsAll0'),
     inputsAlternating: document.getElementById('inputsAlternating'),
@@ -388,6 +392,7 @@
     diagnostics: { ok: true, messages: [] },
     auto: { enabled: false, reverts: new Map() },
     drag: null,
+    collapseSnapshot: null,
     tickHandle: null
   };
 
@@ -478,7 +483,7 @@
     const inputY = firstStageY - stageGap + effectiveHalfHeight - ioH / 2;
     const lastStageY = firstStageY + (state.n - 1) * stageGap;
     const outputY = lastStageY + stageGap - effectiveHalfHeight + ioH / 2;
-    const H = outputY + ioH / 2 + 54;
+    const H = (outputY + ioH / 2 + 54) + (el.generalizedShuffle && el.generalizedShuffle.checked ? 28 : 0);
 
     return {
       W, H, left, right, dx, x0, firstStageY, stageGap,
@@ -506,6 +511,13 @@
       for (let s = 0; s < state.n; s++) {
         for (let j = 0; j < state.N; j++) {
           state.positions[s][j].y = g.stageY(s);
+        }
+      }
+    }
+    if (state.collapseSnapshot) {
+      for (let s = 0; s < state.n; s++) {
+        for (let j = 0; j < state.N; j++) {
+          state.collapseSnapshot.positions[s][j].y = g.stageY(s);
         }
       }
     }
@@ -571,6 +583,7 @@
     state.pairState = Array.from({ length: state.n }, () => new Uint8Array(N / 2));
     state.motion = null;
     state.boxAnimation = null;
+    state.collapseSnapshot = null;
     state.layout = 'butterfly';
     state.boxProgress = el.boxes.checked ? 1 : 0;
 
@@ -674,6 +687,12 @@
           errors.push(`pair dimension failed at s=${s}, q=${q}`);
         }
       }
+      for (let j = 0; j < state.N; j++) {
+        const mate = j ^ (1 << s);
+        if ((rNetworkSlot(j, s, state.n) ^ rNetworkSlot(mate, s, state.n)) !== 1) {
+          errors.push(`R-network adjacency failed at s=${s}, j=${j}`);
+        }
+      }
     }
     for (let layer = 0; layer < state.layers.length; layer++) {
       const origins = state.layers[layer].map(x => x.origin).sort((a, b) => a - b);
@@ -684,12 +703,30 @@
     state.diagnostics = { ok: errors.length === 0, messages: errors };
   }
 
+  // Parker's R-network ordering.  For stage s, construct the physical
+  // address from logical address bits in this order (LSB first):
+  //   s, s+1, ..., n-1, s-1, s-2, ..., 0
+  // Thus the stage's paired bit s becomes physical bit 0, making each
+  // logical switch pair horizontally adjacent while progressively reversing
+  // the lower-address-bit order from stage to stage.
+  function rNetworkSlot(j, s, n = state.n) {
+    let slot = 0;
+    let outBit = 0;
+    for (let bit = s; bit < n; bit++, outBit++) {
+      slot |= ((j >>> bit) & 1) << outBit;
+    }
+    for (let bit = s - 1; bit >= 0; bit--, outBit++) {
+      slot |= ((j >>> bit) & 1) << outBit;
+    }
+    return slot;
+  }
+
   function canonicalPosition(layout, s, j, g = geometry()) {
     const physical = rotR(j, s, state.n);
     let slot;
     if (layout === 'butterfly') slot = j;
     else if (layout === 'omega') slot = physical;
-    else if (layout === 'collapsed') slot = 2 * Math.floor(physical / 2) + 0.5;
+    else if (layout === 'rnetwork') slot = rNetworkSlot(j, s, state.n);
     else throw new Error(`Unknown layout: ${layout}`);
     return { x: g.x(slot), y: g.stageY(s) };
   }
@@ -845,7 +882,9 @@
         state.positions[trajectory.s][trajectory.j] = { ...trajectory.path.p1 };
       }
       state.layout = motion.targetLayout;
+      const after = motion.after;
       state.motion = null;
+      if (after) after();
       return false;
     }
     return motion.cycles ? true : stillMoving;
@@ -897,6 +936,7 @@
 
   function startLayout(targetLayout) {
     const now = performance.now();
+    state.collapseSnapshot = null;
     if (state.motion) updateMotion(now);
     const sourceLayout = state.motion ? state.motion.sourceLayout : state.layout;
     state.motion = null;
@@ -927,6 +967,109 @@
       trajectories
     };
     ensureTick();
+  }
+
+  function startExplicitPositionMotion(targetPositions, targetLayout, after = null) {
+    const now = performance.now();
+    if (state.motion) updateMotion(now);
+    state.motion = null;
+    const g = geometry();
+    const trajectories = [];
+
+    for (let s = 0; s < state.n; s++) {
+      for (let j = 0; j < state.N; j++) {
+        const start = { ...state.positions[s][j] };
+        const end = targetPositions[s][j];
+        const tr = trajectoryFor(s, j, start, end, false, 0, g);
+        if (tr) trajectories.push(tr);
+      }
+    }
+
+    if (trajectories.length === 0) {
+      if (targetLayout) state.layout = targetLayout;
+      if (after) after();
+      render();
+      return;
+    }
+
+    state.motion = {
+      sourceLayout: state.layout,
+      targetLayout: targetLayout || 'custom',
+      startTime: now,
+      trajectories,
+      after
+    };
+    ensureTick();
+  }
+
+  function pairHasNoSwitchBetween(s, j, mate, positions) {
+    const x1 = positions[s][j].x;
+    const x2 = positions[s][mate].x;
+    if (Math.abs(x1 - x2) < 0.01) return true;
+    const lo = Math.min(x1, x2);
+    const hi = Math.max(x1, x2);
+    const eps = 0.01;
+    for (let k = 0; k < state.N; k++) {
+      if (k === j || k === mate) continue;
+      const x = positions[s][k].x;
+      if (x > lo + eps && x < hi - eps) return false;
+    }
+    return true;
+  }
+
+  function toggleCollapsePairs() {
+    const now = performance.now();
+    if (state.motion) updateMotion(now);
+    state.motion = null;
+
+    // If the previous press collapsed a set of pairs, restore the exact
+    // positions that existed immediately before that operation.
+    if (state.collapseSnapshot) {
+      const snapshot = state.collapseSnapshot;
+      const restore = snapshot.positions.map(row => row.map(p => ({ ...p })));
+      const restoreLayout = snapshot.layout;
+      state.collapseSnapshot = null;
+      startExplicitPositionMotion(restore, restoreLayout);
+      return;
+    }
+
+    const before = state.positions.map(row => row.map(p => ({ ...p })));
+    const target = before.map(row => row.map(p => ({ ...p })));
+    let changed = false;
+
+    for (let s = 0; s < state.n; s++) {
+      const seen = new Set();
+      for (let j = 0; j < state.N; j++) {
+        if (seen.has(j)) continue;
+        const mate = j ^ (1 << s);
+        seen.add(j);
+        seen.add(mate);
+
+        if (!pairHasNoSwitchBetween(s, j, mate, before)) continue;
+        const a = before[s][j];
+        const b = before[s][mate];
+
+        // Already-overlaid pairs are left as-is unless they were created by
+        // this button, in which case the snapshot branch above restores them.
+        if (Math.abs(a.x - b.x) < 0.01 && Math.abs(a.y - b.y) < 0.01) continue;
+
+        const midpoint = { x: 0.5 * (a.x + b.x), y: 0.5 * (a.y + b.y) };
+        target[s][j] = { ...midpoint };
+        target[s][mate] = { ...midpoint };
+        changed = true;
+      }
+    }
+
+    if (!changed) {
+      render();
+      return;
+    }
+
+    state.collapseSnapshot = {
+      layout: state.layout,
+      positions: before
+    };
+    startExplicitPositionMotion(target, 'local-collapse');
   }
 
   function updateBoxAnimation(now) {
@@ -1186,7 +1329,10 @@
 
   function renderWalls(g) {
     if (!el.walls.checked) return '';
-    if (state.motion || (state.layout !== 'omega' && state.layout !== 'collapsed')) return '';
+    const wallBaseLayout = state.layout === 'local-collapse' && state.collapseSnapshot
+      ? state.collapseSnapshot.layout
+      : state.layout;
+    if (state.motion || wallBaseLayout !== 'omega') return '';
 
     const boxCount = state.N / 2;
     const amplitude = Math.max(2.2, Math.min(4.2, g.dx * 0.075));
@@ -1391,6 +1537,89 @@
     };
   }
 
+  function inferGeneralizedShuffleFromPositions(positions) {
+    // Infer the logical address bit occupying each physical address-bit
+    // position using horizontal ordering only.  Equal-x switches form a tie
+    // group; a bit is reported only when every rank compatible with those
+    // ties implies the same logical bit.  This lets partially structured
+    // custom/collapsed layouts produce strings containing both digits and *.
+    const eps = 0.25;
+    const ordered = Array.from({ length: state.N }, (_, j) => ({ j, x: positions[j].x }))
+      .sort((a, b) => (a.x - b.x) || (a.j - b.j));
+    const rankRange = Array(state.N);
+    let start = 0;
+    while (start < ordered.length) {
+      let end = start + 1;
+      while (end < ordered.length && Math.abs(ordered[end].x - ordered[start].x) <= eps) end++;
+      for (let k = start; k < end; k++) rankRange[ordered[k].j] = [start, end - 1];
+      start = end;
+    }
+
+    const result = [];
+    const usedLogicalBits = new Set();
+    for (let displayPos = 0; displayPos < state.n; displayPos++) {
+      const physicalBit = state.n - 1 - displayPos;
+      let match = -1;
+      for (let logicalBit = state.n - 1; logicalBit >= 0; logicalBit--) {
+        if (usedLogicalBits.has(logicalBit)) continue;
+        let ok = true;
+        for (let j = 0; j < state.N && ok; j++) {
+          const [lo, hi] = rankRange[j];
+          const expected = (j >>> logicalBit) & 1;
+          // Every possible physical rank inside a tie must have this same bit.
+          for (let rank = lo; rank <= hi; rank++) {
+            if (((rank >>> physicalBit) & 1) !== expected) { ok = false; break; }
+          }
+        }
+        if (ok) { match = logicalBit; break; }
+      }
+      if (match < 0) result.push('*');
+      else {
+        usedLogicalBits.add(match);
+        // Digit 1 names the original MSB; digit n names the original LSB.
+        result.push(String(state.n - match));
+      }
+    }
+    return result.join('');
+  }
+
+  function generalizedShuffleString(stage) {
+    if (stage === 'input' || stage === 'output') {
+      return Array.from({ length: state.n }, (_, i) => String(i + 1)).join('');
+    }
+    return inferGeneralizedShuffleFromPositions(state.positions[stage]);
+  }
+
+  function permutationGadget(x, y, value, key, g) {
+    const fontSize = clamp(0.19 * g.dx, 7.2, 10.5);
+    const charW = Math.max(10.5, fontSize + 3.2);
+    const width = charW * state.n + 8;
+    const height = fontSize + 8;
+    const left = x;
+    const top = y - height + 2;
+    let separators = '';
+    for (let k = 1; k < state.n; k++) {
+      const sx = left + 4 + k * charW;
+      separators += `<line x1="${fmt(sx)}" y1="${fmt(top + 2.5)}" x2="${fmt(sx)}" y2="${fmt(top + height - 2.5)}" stroke="#d3d9e3" stroke-width="0.8"/>`;
+    }
+    return `<g aria-label="Address-bit permutation ${esc(value)}">` +
+      `<rect x="${fmt(left)}" y="${fmt(top)}" width="${fmt(width)}" height="${fmt(height)}" rx="4" fill="#f7f9fc" stroke="#b9c3d2" stroke-width="0.9"/>` +
+      separators +
+      `<text data-bitperm="${esc(key)}" x="${fmt(left + width / 2)}" y="${fmt(y - 1)}" text-anchor="middle" class="svg-label" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="${fmt(fontSize)}" font-weight="800" letter-spacing="${fmt(charW - fontSize)}">${esc(value)}</text>` +
+      `</g>`;
+  }
+
+  function updatePermutationReadouts(root) {
+    if (!root) return;
+    root.querySelectorAll('[data-bitperm]').forEach(node => {
+      const key = node.getAttribute('data-bitperm');
+      const value = key === 'input' || key === 'output'
+        ? generalizedShuffleString(key)
+        : generalizedShuffleString(Number(key));
+      if (node.textContent !== value) node.textContent = value;
+    });
+  }
+
   function renderIOBox(g, x, y, signal, kind, j) {
     const fontSize = clamp(g.dx * 0.25, 6.5, 11.5);
     const bitSize = clamp(g.dx * 0.16, 5.5, 8.2);
@@ -1532,6 +1761,21 @@
     annotations += `<text x="${fmt(g.labelX)}" y="${fmt(g.outputY + 4)}" class="svg-label" font-size="12" font-weight="800">OUTPUT</text>`;
     for (let s = 0; s < state.n; s++) {
       annotations += `<text x="${fmt(g.labelX)}" y="${fmt(g.stageY(s) + 4)}" class="svg-label" font-size="12" font-weight="800">STAGE ${s + 1}</text>`;
+    }
+
+    // Optional passive generalized-shuffle readouts. Input/output remain in
+    // natural index order; each stage is inferred from its current horizontal
+    // switch ordering and may therefore contain '*' for non-bit-permutation
+    // regions. All gadgets are placed below the layer they describe.
+    if (el.generalizedShuffle.checked) {
+      const gadgetX = g.labelX;
+      annotations += permutationGadget(gadgetX, g.inputY + g.ioH / 2 + 22, generalizedShuffleString('input'), 'input', g);
+      for (let s = 0; s < state.n; s++) {
+        annotations += permutationGadget(gadgetX, g.stageY(s) + g.r + 24, generalizedShuffleString(s), String(s), g);
+      }
+      // Place the OUTPUT gadget below the OUTPUT decal and its MSB/LSB labels,
+      // mirroring the below-layer convention without overlapping annotations.
+      annotations += permutationGadget(gadgetX, g.outputY + g.ioH / 2 + 70, generalizedShuffleString('output'), 'output', g);
     }
     annotations += `<text x="${fmt(g.x(0))}" y="${fmt(g.inputY - g.ioH / 2 - 18)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">MSB</text>`;
     annotations += `<text x="${fmt(g.x(state.N - 1))}" y="${fmt(g.inputY - g.ioH / 2 - 18)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">LSB</text>`;
@@ -1811,6 +2055,7 @@
     const ctx = motionCanvasContext(el.motionCanvas,g);
     drawMotionBack(ctx,g,vg);
     drawMotionFront(ctx,g,vg);
+    updatePermutationReadouts(el.motionOverlay);
 
     for (const hit of switchHits) hit.style.pointerEvents='none';
     const statusKey = state.motion.cycles ? state.motion.cycleIndex : -1;
@@ -1830,7 +2075,7 @@
 
   function updateLayoutButtons() {
     const effective = state.motion ? state.motion.targetLayout : state.layout;
-    for (const [button, name] of [[el.butterfly, 'butterfly'], [el.omega, 'omega'], [el.collapsed, 'collapsed']]) {
+    for (const [button, name] of [[el.butterfly, 'butterfly'], [el.omega, 'omega'], [el.rnetwork, 'rnetwork']]) {
       const active = effective === name;
       button.classList.toggle('active', active);
       button.setAttribute('aria-pressed', String(active));
@@ -1840,8 +2085,9 @@
   function updateStatus() {
     const layoutNames = {
       butterfly: 'reverse butterfly',
-      omega: 'reverse omega grid',
-      collapsed: 'collapsed 2×2',
+      omega: 'reverse omega',
+      rnetwork: 'R-network',
+      'local-collapse': 'locally collapsed',
       custom: 'custom dragged layout'
     };
     const layoutText = state.motion
@@ -2010,6 +2256,7 @@
       proposed.y = matePosition.y;
     }
     state.positions[drag.s][drag.j] = proposed;
+    state.collapseSnapshot = null;
     state.layout = 'custom';
     render();
   });
@@ -2026,6 +2273,7 @@
         const physical = rotR(drag.j, drag.s, state.n);
         togglePair(drag.s, physical >> 1, true);
       } else {
+        state.collapseSnapshot = null;
         state.layout = 'custom';
         render();
       }
@@ -2054,6 +2302,8 @@
   });
 
   el.nSelect.addEventListener('change', () => resetNetwork(Number(el.nSelect.value)));
+  el.generalizedShuffle.addEventListener('change', render);
+
   el.stageSpacing.addEventListener('input', () => {
     applyStageSpacing(el.stageSpacing.value);
   });
@@ -2071,7 +2321,8 @@
   });
   el.butterfly.addEventListener('click', () => startLayout('butterfly'));
   el.omega.addEventListener('click', () => startLayout('omega'));
-  el.collapsed.addEventListener('click', () => startLayout('collapsed'));
+  el.rnetwork.addEventListener('click', () => startLayout('rnetwork'));
+  el.collapsePairs.addEventListener('click', toggleCollapsePairs);
   el.auto.addEventListener('change', () => setAutoConfig(el.auto.checked));
   el.inputsAll1.addEventListener('click', () => setInputPattern('all1'));
   el.inputsAll0.addEventListener('click', () => setInputPattern('all0'));
