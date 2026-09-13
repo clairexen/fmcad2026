@@ -121,13 +121,13 @@ The six Verilog modules also contain formal safety properties for the expected
 semantic for each of the bit-manipulation instructions and the repository contains
 `*.sby` files for checking those formal properties with SymbiYosys (https://github.com/YosysHQ/sby).
 
-A peculiar patent
------------------
+A peculiar patent and the case for BMWAW and BMAWW
+--------------------------------------------------
 
 ...
 
-The case for BMWAW and BMAWW
-----------------------------
+Implementing BMWAW / BMAWW using a reverse omega network
+--------------------------------------------------------
 
 ...
 
