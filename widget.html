@@ -1537,15 +1537,26 @@
     };
   }
 
-  function inferGeneralizedShuffleFromPositions(positions) {
+  function inferGeneralizedShuffleFromPositions(stage, positions) {
     // Infer the logical address bit occupying each physical address-bit
-    // position using horizontal ordering only.  Equal-x switches form a tie
-    // group; a bit is reported only when every rank compatible with those
-    // ties implies the same logical bit.  This lets partially structured
-    // custom/collapsed layouts produce strings containing both digits and *.
+    // position from the horizontal ordering of SWITCH OUTPUT PORTS, not
+    // switch centres. This matters for collapsed pairs: their centres may
+    // coincide, while their left/right output ports remain distinct and
+    // therefore still encode the ordering of the permutation.
+    //
+    // Equal-x output ports form a tie group; a bit is reported only when
+    // every rank compatible with those ties implies the same logical bit.
+    // This lets partially structured custom layouts produce strings
+    // containing both digits and *.
     const eps = 0.25;
-    const ordered = Array.from({ length: state.N }, (_, j) => ({ j, x: positions[j].x }))
-      .sort((a, b) => (a.x - b.x) || (a.j - b.j));
+    const d = geometry().r / Math.SQRT2;
+    const ordered = Array.from({ length: state.N }, (_, j) => {
+      const side = rotR(j, stage, state.n) & 1;
+      return {
+        j,
+        x: positions[j].x + (side === 0 ? -d : d)
+      };
+    }).sort((a, b) => (a.x - b.x) || (a.j - b.j));
     const rankRange = Array(state.N);
     let start = 0;
     while (start < ordered.length) {
@@ -1587,7 +1598,7 @@
     if (stage === 'input' || stage === 'output') {
       return Array.from({ length: state.n }, (_, i) => String(i + 1)).join('');
     }
-    return inferGeneralizedShuffleFromPositions(state.positions[stage]);
+    return inferGeneralizedShuffleFromPositions(stage, state.positions[stage]);
   }
 
   function permutationGadget(x, y, value, key, g) {
