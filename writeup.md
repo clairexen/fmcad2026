@@ -118,8 +118,8 @@ implementation, because the `.cout()` output of the BMAWW module does only
 depend on `.cin()` and not `.din()`.
 
 The six Verilog modules also contain formal safety properties for the expected
-semantic for each of the bit-manipulation instructions and `*.sby` files for
-checking those formal properties with SymbiYosys (https://github.com/YosysHQ/sby).
+semantic for each of the bit-manipulation instructions and the repository contains
+`*.sby` files for checking those formal properties with SymbiYosys (https://github.com/YosysHQ/sby).
 
 A peculiar patent
 -----------------
