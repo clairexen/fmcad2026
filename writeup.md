@@ -1,8 +1,8 @@
 The Parable of the Square-Dancing Witches and Wizards
 =====================================================
 
-Abstract
---------
+Introduction
+------------
 
 In this Presentation I will tell The Parable of the Square-Dancing Witches and
 Wizards. This parable explains how to perform the bit-permutation operation
@@ -25,6 +25,16 @@ Witches and Wizards on the other hand is loosely based on symbolisms from The
 Wizard of Oz, and does not only provide a mental image for what this
 bit-permutation operation does, but also how that can be achieved in an
 efficient manner using a Reverse Omega Network.
+
+This author discovered the method independently but the method is not novel. In
+fact, the US patent [US9134953], originally filed in 2008 and due to expire in
+November 2028, seems to claim this invention. And it is in big part because of
+this patent that there's no instruction implementing any of the "sheep and
+goats" family of functions in open ISAs and processors yet.
+
+However, the 1994 paper [narasimha1994] describes this exact circuit and
+deriving this exact circuit should be rather straigth-forward for anyone
+familiar with banyan networks and other self-routing switching networks.
 
 A family of three functions (and their respective inverse)
 ----------------------------------------------------------
@@ -70,6 +80,10 @@ reasonable considering verses 41-42 of the parable from christian scripture:
 > and you gave me nothing to eat, I was thirsty and you gave me nothing to
 > drink, [...]
 
+I have illustrated the three mental pictures in this sketch:
+
+https://github.com/clairexen/fmcad2026/blob/main/illustrations/family-of-three-functions-line-art-faithful.png
+
 The X86 / X86\_64 ISA also contains the inverse operation with regards to the
 selected bits: "parallel deposit" (PDEP), that places the selected bits in
 their original positions, when executed with a PEXT result and the control word
@@ -83,9 +97,10 @@ clear at the end of the discussion of the AWA operation below.)
 I personally consider the use of the the word "parallel" (and prefix letter P)
 in the X86 PEXT and PDEP instruction memnonics a prime example of bad ISA
 design, because the memnonic for an instruction should focus on the instruction
-semantic, not performance. Following the direction of my work for the RISC-V 
-Bitmanip Taks Group I therefore use the prefix BM (for Bit-Mask) instead,
-yielding the following 6 instructions with the semantics described above:
+semantic, not performance. Following the direction of my work for the RISC-V
+Bitmanip Taks Group I therefore use the prefix BM (for Bit-Mask, ... or maybe
+Bit-Magic?) instead, yielding the following 6 instructions with the semantics
+as described above:
 
 | Operation | Reverse-OP | Unselected Bits |
 |:---------:|:----------:|:----------------|
