@@ -61,7 +61,7 @@ I am going to refer to it as the "witches and wizards" (WAW) operation from
 now on.
 
 In the third mental picture we simply throw the goat bits away and replace them
-with zeros in the output word. This is the semantic of the X86 / X86_64 "parallel
+with zeros in the output word. This is the semantic of the X86 / X86\_64 "parallel
 extract" (PEXT) instruction. Arguably this third mental picture is the most
 reasonable considering verses 41-42 of the parable from christian scripture:
 
@@ -70,7 +70,7 @@ reasonable considering verses 41-42 of the parable from christian scripture:
 > and you gave me nothing to eat, I was thirsty and you gave me nothing to
 > drink, [...]
 
-The X86 / X86_64 ISA also contains the inverse operation with regards to the
+The X86 / X86\_64 ISA also contains the inverse operation with regards to the
 selected bits: "parallel deposit" (PDEP), that places the selected bits in
 their original positions, when executed with a PEXT result and the control word
 that created it, ignoring additional "goat" bits in the input and setting
@@ -129,9 +129,25 @@ A peculiar patent and the case for BMWAW and BMAWW
 Implementing BMWAW / BMAWW using a reverse omega network
 --------------------------------------------------------
 
+Let's start with some definitions:
+
+- An Omega Network consists of repeated perfect-shuffle permutations followed by layers of 2x2 switches.
+- A Reverse Omega Network consists of layers of 2x2 switches followed by perfect un-shuffle permutations.
+- A perfect shuffle rotates each wire's binary address one bit to the left, interleaving the wires from the LSB and MSB halves.
+- A perfect un-shuffle rotates each wire's binary address one bit to the right, compressing the even-numbered wires to the LSB end and the odd-numbered wires to the MSB end.
+
 ...
 
 The Parable of the Square-Dancing Witches and Wizards
 -----------------------------------------------------
 
 ...
+
+References
+----------
+- [narasimha1994] M. J. Narasimha, “A Recursive Concentrator Structure with Applications to Self-Routing Switching Networks,” IEEE Transactions on Communications, 42(2–4), 896–898, 1994: https://doi.org/10.1109/TCOMM.1994.580197.
+- [chuan-linwu1980] C.-L. Wu and T.-Y. Feng, “The Reverse-Exchange Interconnection Network,” IEEE Transactions on Computers, C-29(9), 801–811, 1980: https://doi.org/10.1109/TC.1980.1675679.
+- [parker1980] D. S. Parker, “Notes on Shuffle/Exchange-Type Switching Networks,” IEEE Transactions on Computers, C-29(3), 213–222, 1980: https://doi.org/10.1109/TC.1980.1675553.
+- [lawrie1975] D. H. Lawrie, “Access and Alignment of Data in an Array Processor,” IEEE Transactions on Computers, C-24(12), 1145–1155, 1975: https://doi.org/10.1109/T-C.1975.224157.
+- [hilewitz2006] Y. Hilewitz and R. B. Lee, “Fast Bit Compression and Expansion with Parallel Extract and Parallel Deposit Instructions,” in IEEE 17th International Conference on Application-specific Systems, Architectures and Processors (ASAP’06), IEEE, Sep. 2006: https://doi.org/10.1109/ASAP.2006.33.
+- [US9134953] R. B. Lee and Y. Hilewitz, “Microprocessor shifter circuits utilizing butterfly and inverse butterfly routing circuits, and control circuits therefor,” U.S. Patent 9 134 953 B2, Sep. 15, 2015: https://patents.google.com/patent/US9134953B2/en
