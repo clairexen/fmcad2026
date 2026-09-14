@@ -1,5 +1,10 @@
 formal: prove_bmsag/PASS prove_bmgas/PASS prove_bmwaw/PASS prove_bmaww/PASS prove_bmext/PASS prove_bmdep/PASS prove_hilewitz/PASS
 
+decoder-stats: decoder_stats.md
+
+decoder_stats.md: decoder_stats.sh hilewitz.v
+	bash decoder_stats.sh $@
+
 prove_bmsag/PASS: bmsag.v bmwaw.v
 	sby -f prove_bmsag.sby
 
@@ -29,5 +34,6 @@ clean:
 	rm -rf prove_bmext/
 	rm -rf prove_bmdep/
 	rm -rf prove_hilewitz/
+	rm -f decoder_stats.md
 
-.PHONY: formal clean
+.PHONY: formal decoder-stats clean

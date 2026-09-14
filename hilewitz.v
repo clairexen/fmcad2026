@@ -19,7 +19,7 @@
 module hilewitz_decoder #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
-) (input [XLEN-1:0] cin, output [XLOG2*XLEN/2-1:0] control);
+) (input [XLEN-1:0] cin, output [XLOG2*XLEN/2-1:0] ctrl);
 	function [XLOG2:0] prefix_count;
 		input [XLEN-1:0] value;
 		input integer last;
@@ -44,7 +44,7 @@ module hilewitz_decoder #(
 				wire [XLOG2:0] rot;
 				assign rot = prefix_count(cin, LAST);
 				// LROTC(1^K, rot), with 1 meaning exchange.
-				assign control[n*(XLEN/2)+i] =
+				assign ctrl[n*(XLEN/2)+i] =
 					1'b1 ^ (((rot + K-1-POS) / K) & 1'b1);
 			end
 		end
@@ -55,18 +55,18 @@ endmodule
 module clairexen_decoder #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
-) (input [XLEN-1:0] cin, output [XLOG2*XLEN/2-1:0] control);
+) (input [XLEN-1:0] cin, output [XLOG2*XLEN/2-1:0] ctrl);
 	genvar n, i;
 
 	generate
 		for (n = 0; n < XLOG2; n = n+1) begin:stage
 			wire [XLEN-1:0] st_ci, st_msk, st_xor, st_ct, st_co;
 			assign st_xor[0] = !st_ci[0];
-			for (i = 1; i < XLEN; i = i+1) begin:control_gen
+			for (i = 1; i < XLEN; i = i+1) begin:control
 				assign st_xor[i] = !st_ci[i] ^ (st_xor[i-1] & st_msk[i-1]);
 			end
 			for (i = 0; i < (XLEN >> 1); i = i+1) begin:route
-				assign control[n*(XLEN/2)+i] = st_xor[2*i];
+				assign ctrl[n*(XLEN/2)+i] = st_xor[2*i];
 				assign st_ct[2*i  ] = st_xor[2*i] ? st_ci[2*i+1] : st_ci[2*i  ];
 				assign st_ct[2*i+1] = st_xor[2*i] ? st_ci[2*i  ] : st_ci[2*i+1];
 				assign st_co[(XLEN >> 1) + i] = st_ct[2*i+1], st_co[i] = st_ct[2*i];
@@ -100,9 +100,8 @@ module prove_hilewitz_clairexen_equiv #(
 	generate
 		for (n = 0; n < XLOG2; n = n+1) begin:reshuffle_stage
 			for (i = 0; i < (XLEN >> 1); i = i+1) begin:reshuffle_bit
-				localparam integer WLOG2 = XLOG2-1;
 				localparam integer DST = ((i << n) |
-						(i >> (WLOG2-n))) & ((XLEN >> 1)-1);
+						(i >> (XLOG2-n-1))) & ((XLEN >> 1)-1);
 				assign c_ctrl_reshuffled[n*(XLEN/2)+DST] =
 					c_ctrl[n*(XLEN/2)+i];
 			end
