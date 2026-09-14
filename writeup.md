@@ -56,7 +56,9 @@ in the most right position of the left area, and the MSB goat ending up in the
 most left position in the left area, the MSB position of the output word. In
 this mental picture the goats behave exactly like the sheep, only shifted to
 the left by the number of sheep. This operation is most commonly referred to
-as "sheep and goats" (SAG).
+as "sheep and goats" (SAG). Knuth calls this instruction "sheep and goats". But
+it is also often referred to as "centrifuge". The Power 10 ISA contains an
+instruction named cfuged ("Centrifuge Doubleword") with this exact semantic.
 
 In the second mental picture both the goats and the sheep approach their
 respective output areas from the mid-point between the areas. Then the sheep
@@ -68,12 +70,17 @@ be sorted stably to the right while the order of the goats with respect to
 MSB/LSB of the input and output words is being reversed. This operation is
 most commonly referred to as "sheep and goats with reversed goat order", but
 I am going to refer to it as the "witches and wizards" (WAW) operation from
-now on.
+now on. However, Knuth calls this instruction "gather-flip" and I have seen
+the term "scatter-flip" being used for the inverse operation.
 
 In the third mental picture we simply throw the goat bits away and replace them
-with zeros in the output word. This is the semantic of the X86 / X86\_64 "parallel
-extract" (PEXT) instruction. Arguably this third mental picture is the most
-reasonable considering verses 41-42 of the parable from christian scripture:
+with zeros in the output word. This is the semantic of the X86 / X86\_64
+"parallel extract" (PEXT) instruction. (And Power 10 also has a `pextd`
+instruction. And the x86 AVX-512 `VPCOMPRESS*`, Arm SVE `COMPACT`, and RISC-V
+`vcompress.vm` vector instructions gather selected vector elements stably, but
+discard or leave unspecified the complementary elements.) Arguably this third
+mental picture is the most reasonable considering verses 41-42 of the parable
+from christian scripture:
 
 > Then he will say to those on his left, ‘Depart from me, you who are cursed,
 > into the eternal fire prepared for the devil and his angels. For I was hungry
