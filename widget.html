@@ -347,6 +347,15 @@
   .mini-switch-cell.pair {
     min-width: 29px;
   }
+  .mini-io-diagram {
+    position: relative;
+    width: max-content;
+    min-width: 150px;
+  }
+  .mini-io-diagram svg {
+    display: block;
+    overflow: visible;
+  }
   .mini-switch-cell.butterfly-divider::before {
     content: "";
     position: absolute;
@@ -536,6 +545,10 @@
           <h3 class="mini-diagram-title">R-Network</h3>
           <div id="miniRNetwork" class="mini-switch-grid" aria-label="R-Network switch configuration"></div>
         </section>
+        <section class="mini-diagram">
+          <h3 class="mini-diagram-title">Input-Output</h3>
+          <div id="miniInputOutput" class="mini-io-diagram" aria-label="Input to output signal permutation"></div>
+        </section>
       </div>
     </aside>
   </div>
@@ -568,6 +581,7 @@
     miniButterfly: document.getElementById('miniButterfly'),
     miniOmega: document.getElementById('miniOmega'),
     miniRNetwork: document.getElementById('miniRNetwork'),
+    miniInputOutput: document.getElementById('miniInputOutput'),
     status: document.getElementById('status'),
     nSelect: document.getElementById('nSelect'),
     speed: document.getElementById('speed'),
@@ -3218,7 +3232,7 @@
 
     // Measure the diagrams as actually rendered instead of estimating from N.
     // This keeps N=8/16 compact and avoids excessive empty width at N=32/64.
-    const diagrams = [el.miniButterfly, el.miniOmega, el.miniRNetwork];
+    const diagrams = [el.miniButterfly, el.miniOmega, el.miniRNetwork, el.miniInputOutput];
     let diagramWidth = 0;
     for (const node of diagrams) {
       diagramWidth = Math.max(diagramWidth, node.scrollWidth, node.getBoundingClientRect().width);
@@ -3236,6 +3250,156 @@
     const maxWidth = Math.max(180, canvasWidth - 16);
     const width = Math.min(maxWidth, Math.max(180, desired));
     el.sidebar.style.width = `${width}px`;
+  }
+
+  function renderMiniInputOutput() {
+    if (!el.miniInputOutput) return;
+
+    const N = state.N;
+    const finalLayer = state.layers[state.n];
+
+    const pitch = clamp(420 / Math.max(8, N), 7.2, 22);
+    const marginX = 10;
+    const boxW = clamp(pitch * 0.62, 5.2, 11);
+    const boxH = 9;
+    const stub = 7;
+    const tan30 = Math.tan(Math.PI / 6);
+
+    const inputX = j => marginX + j * pitch;
+    // Offset the output row by half a signal pitch so the two rows interleave.
+    const outputX = j => marginX + (j + 0.5) * pitch;
+
+    const outByOrigin = Array(N);
+    for (let out = 0; out < N; out++) outByOrigin[finalLayer[out].origin] = out;
+
+    // Determine enough vertical room for the largest fixed-30° diagonal.
+    let maxDx = 0;
+    for (let origin = 0; origin < N; origin++) {
+      maxDx = Math.max(maxDx, Math.abs(outputX(outByOrigin[origin]) - inputX(origin)));
+    }
+    const diagonalRise = maxDx * tan30;
+    const topY = 13;
+    const routeGap = Math.max(28, diagonalRise + 12);
+    const bottomY = topY + boxH + stub * 2 + routeGap * 2 + 18;
+    const midY = (topY + bottomY) / 2;
+    const width = marginX * 2 + (N - 0.5) * pitch;
+    const height = bottomY + 15;
+
+    const parts = [];
+    parts.push(`<svg viewBox="0 0 ${fmt(width)} ${fmt(height)}" width="${fmt(width)}" height="${fmt(height)}" aria-hidden="true">`);
+
+    // Draw routes below boxes.
+    for (let origin = 0; origin < N; origin++) {
+      const signal = state.inputs[origin];
+      const out = outByOrigin[origin];
+      const x1 = inputX(origin);
+      const x2 = outputX(out);
+      const dx = x2 - x1;
+      const dy30 = Math.abs(dx) * tan30;
+      const value = signal.value;
+      const goingLeft = dx < 0;
+
+      // Input-Output diagram has a richer directional style classification:
+      // - ordinary selected (1) signals remain blue;
+      // - selected (1) signals moving left use a new green style;
+      // - ordinary unselected (0) signals remain orange;
+      // - unselected (0) signals moving right use the silver style;
+      // - X remains silver.
+      let core = signalCoreColor(signal);
+      let glow = signalGlowColor(signal);
+      if (value === 1 && goingLeft) {
+        core = '#278a57';
+        glow = '#8fd5ad';
+      } else if (value === 0 && !goingLeft) {
+        core = '#727b89';
+        glow = '#c8ced8';
+      }
+
+      let d;
+      const angleAtTop =
+        value === 1 ? !goingLeft :  // blue: top when moving right, bottom when moving left
+        value === 0 ? goingLeft :   // orange: bottom when moving right, top when moving left
+        false;
+
+      if (value === 1 || value === 0) {
+        if (angleAtTop) {
+          // Top-angled rule: short input stub, fixed ~30° diagonal, then vertical.
+          const y0 = topY + boxH / 2;
+          const y1 = y0 + stub;
+          const y2 = y1 + dy30;
+          d = `M ${fmt(x1)} ${fmt(y0)} ` +
+              `L ${fmt(x1)} ${fmt(y1)} ` +
+              `L ${fmt(x2)} ${fmt(y2)} ` +
+              `L ${fmt(x2)} ${fmt(bottomY - boxH/2)}`;
+        } else {
+          // Bottom-angled rule: vertical first, fixed ~30° diagonal near the
+          // output, then a short output stub.
+          const y3 = bottomY - boxH / 2;
+          const y2 = y3 - stub;
+          const y1 = y2 - dy30;
+          d = `M ${fmt(x1)} ${fmt(topY + boxH/2)} ` +
+              `L ${fmt(x1)} ${fmt(y1)} ` +
+              `L ${fmt(x2)} ${fmt(y2)} ` +
+              `L ${fmt(x2)} ${fmt(y3)}`;
+        }
+      } else {
+        // Silver: use the same fixed 30° rule centered halfway between the
+        // blue-top and yellow-bottom placements.
+        const halfDy = dy30 / 2;
+        const y1 = midY - halfDy;
+        const y2 = midY + halfDy;
+        d = `M ${fmt(x1)} ${fmt(topY + boxH/2)} ` +
+            `L ${fmt(x1)} ${fmt(y1)} ` +
+            `L ${fmt(x2)} ${fmt(y2)} ` +
+            `L ${fmt(x2)} ${fmt(bottomY - boxH/2)}`;
+      }
+
+      parts.push(`<path d="${d}" fill="none" stroke="${glow}" stroke-width="${value === 2 ? 4.5 : 3.7}" opacity="${value === 2 ? 0.55 : 0.38}" stroke-linecap="round" stroke-linejoin="round"/>`);
+      parts.push(`<path d="${d}" fill="none" stroke="${core}" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>`);
+    }
+
+    // Two unlabeled rows of compact input/output boxes.
+    for (let j = 0; j < N; j++) {
+      const input = state.inputs[j];
+      const output = finalLayer[j];
+      const ix = inputX(j);
+      const ox = outputX(j);
+
+      const inputOut = outByOrigin[j];
+      const inputGoingLeft = outputX(inputOut) < inputX(j);
+
+      let inputCore = signalCoreColor(input);
+      let inputFill = input.value === 1 ? '#eefaff' : input.value === 0 ? '#fff8e8' : '#f1f2f4';
+      if (input.value === 1 && inputGoingLeft) {
+        inputCore = '#278a57';
+        inputFill = '#eef9f2';
+      } else if (input.value === 0 && !inputGoingLeft) {
+        inputCore = '#727b89';
+        inputFill = '#f1f2f4';
+      }
+
+      // Output styling follows the originating signal's directional class.
+      const origin = output.origin;
+      const originGoingLeft = outputX(j) < inputX(origin);
+      let outputCore = signalCoreColor(output);
+      let outputFill = output.value === 1 ? '#eefaff' : output.value === 0 ? '#fff8e8' : '#f1f2f4';
+      if (output.value === 1 && originGoingLeft) {
+        outputCore = '#278a57';
+        outputFill = '#eef9f2';
+      } else if (output.value === 0 && !originGoingLeft) {
+        outputCore = '#727b89';
+        outputFill = '#f1f2f4';
+      }
+
+      const irx = input.value === 1 ? 1 : 3;
+      const orx = output.value === 1 ? 1 : 3;
+
+      parts.push(`<rect x="${fmt(ix-boxW/2)}" y="${fmt(topY-boxH/2)}" width="${fmt(boxW)}" height="${boxH}" rx="${irx}" fill="${inputFill}" stroke="${inputCore}" stroke-width="1.2"/>`);
+      parts.push(`<rect x="${fmt(ox-boxW/2)}" y="${fmt(bottomY-boxH/2)}" width="${fmt(boxW)}" height="${boxH}" rx="${orx}" fill="${outputFill}" stroke="${outputCore}" stroke-width="1.2"/>`);
+    }
+
+    parts.push(`</svg>`);
+    el.miniInputOutput.innerHTML = parts.join('');
   }
 
   function renderMiniDiagrams() {
@@ -3289,6 +3453,7 @@
     el.miniRNetwork.style.gridTemplateColumns = `repeat(${state.N / 2}, 33px)`;
     el.miniRNetwork.innerHTML = rnet;
 
+    renderMiniInputOutput();
     sizeNetworkSidebar();
   }
 
