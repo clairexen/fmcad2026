@@ -1,4 +1,4 @@
-formal: prove_bmsag/PASS prove_bmgas/PASS prove_bmwaw/PASS prove_bmaww/PASS prove_bmext/PASS prove_bmdep/PASS
+formal: prove_bmsag/PASS prove_bmgas/PASS prove_bmwaw/PASS prove_bmaww/PASS prove_bmext/PASS prove_bmdep/PASS prove_hilewitz/PASS
 
 prove_bmsag/PASS: bmsag.v bmwaw.v
 	sby -f prove_bmsag.sby
@@ -18,6 +18,9 @@ prove_bmext/PASS: bmext.v bmwaw.v
 prove_bmdep/PASS: bmdep.v bmaww.v
 	sby -f prove_bmdep.sby
 
+prove_hilewitz/PASS: hilewitz.v
+	sby -f prove_hilewitz.sby
+
 clean:
 	rm -rf prove_bmsag/
 	rm -rf prove_bmgas/
@@ -25,5 +28,6 @@ clean:
 	rm -rf prove_bmaww/
 	rm -rf prove_bmext/
 	rm -rf prove_bmdep/
+	rm -rf prove_hilewitz/
 
 .PHONY: formal clean
