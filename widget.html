@@ -3275,10 +3275,10 @@
     // Size the miniature from the longest possible fixed-30° diagonal.
     // About 1.5× that rise is sufficient for the two mirrored routing zones,
     // plus the endpoint boxes/stubs and a small margin.
-    let maxDx = 0;
-    for (let origin = 0; origin < N; origin++) {
-      maxDx = Math.max(maxDx, Math.abs(outputX(outByOrigin[origin]) - inputX(origin)));
-    }
+    // Height depends only on N: use the largest possible horizontal
+    // displacement between any input and any half-step-offset output.
+    // This keeps the mini-diagram height stable while the permutation changes.
+    const maxDx = (N - 0.5) * pitch;
     const diagonalRise = maxDx * tan30;
     const topY = 13;
     const routingHeight = Math.max(34, diagonalRise * 1.5);
