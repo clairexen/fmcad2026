@@ -104,6 +104,60 @@
     color: #3f4c61;
     font-size: 12px;
   }
+  .checks label.option-disabled {
+    opacity: 0.42;
+    color: #738095;
+  }
+  .shuffle-gadget-button {
+    cursor: pointer;
+  }
+  .shuffle-gadget-shell {
+    fill: #fbfcfe;
+    stroke: #b8c3d1;
+    stroke-width: 0.9;
+  }
+  .shuffle-gadget-cell {
+    fill: transparent;
+  }
+  .shuffle-gadget-divider {
+    stroke: #d6dde7;
+    stroke-width: 0.8;
+  }
+  .shuffle-gadget-hit {
+    fill: transparent;
+    stroke: none;
+  }
+  .shuffle-gadget-button:hover .shuffle-gadget-hover {
+    fill: #eaf3fa;
+  }
+  .shuffle-gadget-button:active .shuffle-gadget-hover {
+    fill: #dbeaf5;
+  }
+  .shuffle-gadget-arrow {
+    fill: #334155;
+    stroke: none;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-weight: 900;
+  }
+  .shuffle-inline-input {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0 3px;
+    border: 1.4px solid #5f819b;
+    border-radius: 4px;
+    background: #fff;
+    color: #263246;
+    outline: none;
+    text-align: center;
+    font: 800 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing: 0.08em;
+    box-sizing: border-box;
+  }
+  .shuffle-inline-input.invalid {
+    border-color: #c53b4d;
+    background: #fff5f6;
+  }
 
   .input-presets {
     display: flex;
@@ -167,6 +221,10 @@
     display: none;
     pointer-events: none;
     user-select: none;
+  }
+  #motionOverlay .shuffle-gadget-button,
+  #motionOverlay .shuffle-inline-input {
+    pointer-events: auto;
   }
   #motionGuideCanvas { z-index: 0; }
   #motionCanvas { z-index: 2; }
@@ -285,18 +343,21 @@
     <label><input id="showUpperCarry" type="checkbox"> LSB→MSB zero-toggling band</label>
     <label><input id="showLowerCarry" type="checkbox"> MSB→LSB one-toggling band</label>
     <label><input id="showWalls" type="checkbox"> Walls</label>
-    <label><input id="showGeneralizedShuffle" type="checkbox"> Identify Shuffles</label>
+    <label><input id="showGeneralizedShuffle" type="checkbox"> Shuffles</label>
     <label><input id="showStars" type="checkbox"> Correction stars</label>
     <label><input id="showChecks" type="checkbox"> Checkmarks</label>
     <label><input id="showSwitchLabels" type="checkbox"> Switch-output labels</label>
     <label><input id="showSignalShades" type="checkbox"> Signal shades</label>
     <label><input id="showPairArcs" type="checkbox"> Paired-switch arcs</label>
+    <label><input id="moveOnArcs" type="checkbox"> Move on arcs</label>
+    <label><input id="autoAlign" type="checkbox"> Auto-align</label>
   </div>
   <div class="input-presets" aria-label="Layout and input patterns">
     <button id="layoutButterfly" type="button">1 · Reverse butterfly</button>
     <button id="layoutOmega" type="button">2 · Reverse omega</button>
     <button id="layoutRNetwork" type="button">3 · R-Network</button>
     <button id="collapsePairs" type="button">(Un-)Collapse</button>
+    <button id="reverseAll" type="button">Reverse</button>
     <span class="preset-separator" aria-hidden="true"></span>
     <label class="caption">Set inputs</label>
     <button id="inputsAll1" type="button">All 1</button>
@@ -352,6 +413,7 @@
     omega: document.getElementById('layoutOmega'),
     rnetwork: document.getElementById('layoutRNetwork'),
     collapsePairs: document.getElementById('collapsePairs'),
+    reverseAll: document.getElementById('reverseAll'),
     auto: document.getElementById('autoConfig'),
     customLabels: document.getElementById('customLabels'),
     applyLabels: document.getElementById('applyLabels'),
@@ -364,6 +426,8 @@
     switchLabels: document.getElementById('showSwitchLabels'),
     shades: document.getElementById('showSignalShades'),
     pairArcs: document.getElementById('showPairArcs'),
+    moveOnArcs: document.getElementById('moveOnArcs'),
+    autoAlign: document.getElementById('autoAlign'),
     generalizedShuffle: document.getElementById('showGeneralizedShuffle'),
     inputsAll1: document.getElementById('inputsAll1'),
     inputsAll0: document.getElementById('inputsAll0'),
@@ -385,7 +449,14 @@
     layers: [],
     carry: [],
     positions: [],
+    inputPositions: [],
+    outputPositions: [],
+    shuffleMotions: new Map(),
+    shuffleDigitAnimations: new Map(),
+    shuffleEditors: new Map(),
+    autoAligning: false,
     layout: 'butterfly',
+    collapsed: false,
     motion: null,
     boxProgress: 0,
     boxAnimation: null,
@@ -584,6 +655,7 @@
     state.motion = null;
     state.boxAnimation = null;
     state.collapseSnapshot = null;
+    state.collapsed = false;
     state.layout = 'butterfly';
     state.boxProgress = el.boxes.checked ? 1 : 0;
 
@@ -591,6 +663,11 @@
     state.positions = Array.from({ length: state.n }, (_, s) =>
       Array.from({ length: N }, (_, j) => ({ x: g.x(j), y: g.stageY(s) }))
     );
+    state.inputPositions = Array.from({ length: N }, (_, j) => ({ x: g.x(j), y: g.inputY }));
+    state.outputPositions = Array.from({ length: N }, (_, j) => ({ x: g.x(j), y: g.outputY }));
+    state.shuffleMotions.clear();
+    state.shuffleDigitAnimations.clear();
+    state.shuffleEditors.clear();
     recompute();
     if (state.auto.enabled) forceAutoConfig();
     render();
@@ -731,6 +808,105 @@
     return { x: g.x(slot), y: g.stageY(s) };
   }
 
+  function canonicalLayoutPosition(layout, s, j, g = geometry(), collapsed = state.collapsed) {
+    const p = canonicalPosition(layout, s, j, g);
+    if (!collapsed || layout === 'butterfly') return p;
+
+    // Reverse omega and R-network both make the logical stage pair adjacent.
+    // Their collapsed variants retain the named layout but overlay each pair
+    // at the midpoint of its two canonical positions.
+    const mate = j ^ (1 << s);
+    const m = canonicalPosition(layout, s, mate, g);
+    return { x: 0.5 * (p.x + m.x), y: g.stageY(s) };
+  }
+
+
+  function boundaryMatchesNaturalGrid(positions, g = geometry(), tolerance = 0.45) {
+    for (let j = 0; j < state.N; j++) {
+      if (Math.abs(positions[j].x - g.x(j)) > tolerance) return false;
+    }
+    return true;
+  }
+
+  function stageMatchesNamedLayout(layout, s, g = geometry(), tolerance = 0.45) {
+    // Recognize either the ordinary or fully collapsed variant of a named
+    // layout. A mixed partially-collapsed state is intentionally "custom".
+    let ordinary = true;
+    let collapsed = true;
+
+    for (let j = 0; j < state.N; j++) {
+      const p = state.positions[s][j];
+      const ordinaryTarget = canonicalLayoutPosition(layout, s, j, g, false);
+      const collapsedTarget = canonicalLayoutPosition(layout, s, j, g, true);
+
+      if (Math.abs(p.x - ordinaryTarget.x) > tolerance ||
+          Math.abs(p.y - ordinaryTarget.y) > tolerance) ordinary = false;
+
+      if (Math.abs(p.x - collapsedTarget.x) > tolerance ||
+          Math.abs(p.y - collapsedTarget.y) > tolerance) collapsed = false;
+
+      if (!ordinary && !collapsed) return { match: false, collapsed: false };
+    }
+
+    return ordinary
+      ? { match: true, collapsed: false }
+      : { match: true, collapsed: true };
+  }
+
+  function detectNamedLayout() {
+    if (state.motion || state.drag) return null;
+
+    const g = geometry();
+
+    // INPUT and OUTPUT are part of a named layout and must be in their natural
+    // grid positions for the named-layout button to become active.
+    if (!boundaryMatchesNaturalGrid(state.inputPositions, g) ||
+        !boundaryMatchesNaturalGrid(state.outputPositions, g)) {
+      return null;
+    }
+
+    for (const layout of ['butterfly', 'omega', 'rnetwork']) {
+      let matched = true;
+      let collapsed = null;
+
+      for (let s = 0; s < state.n; s++) {
+        const result = stageMatchesNamedLayout(layout, s, g);
+        if (!result.match) {
+          matched = false;
+          break;
+        }
+        if (collapsed == null) collapsed = result.collapsed;
+        else if (collapsed !== result.collapsed) {
+          // Mixed collapsed/non-collapsed stages are not a canonical named
+          // layout variant.
+          matched = false;
+          break;
+        }
+      }
+
+      if (matched) return {
+        layout,
+        collapsed: layout === 'butterfly' ? false : !!collapsed
+      };
+    }
+
+    return null;
+  }
+
+  function recognizeCurrentLayout() {
+    const detected = detectNamedLayout();
+    if (detected) {
+      state.layout = detected.layout;
+      state.collapsed = detected.collapsed;
+    } else if (!state.motion) {
+      state.layout = 'custom';
+      state.collapsed = collapsedPairCount() > 0;
+    }
+    updateLayoutButtons();
+    updateOptionAvailability();
+    return detected;
+  }
+
   function cubicPoint(path, t) {
     const u = 1 - t;
     return {
@@ -861,7 +1037,10 @@
       const traveled = trajectory.profile.distanceAt(localTime);
       const fraction = trajectory.distancePositions > 0 ? traveled / trajectory.distancePositions : 1;
       const t = invertArcLength(trajectory.lut, trajectory.lengthPx, fraction);
-      state.positions[trajectory.s][trajectory.j] = pathPoint(trajectory.path, t);
+      const p = pathPoint(trajectory.path, t);
+      if (trajectory.boundaryKey === 'input') state.inputPositions[trajectory.j].x = p.x;
+      else if (trajectory.boundaryKey === 'output') state.outputPositions[trajectory.j].x = p.x;
+      else state.positions[trajectory.s][trajectory.j] = p;
       if (elapsed < trajectory.profile.total) stillMoving = true;
     }
     if (motion.cycles && elapsed >= motion.cycleDuration) {
@@ -879,11 +1058,14 @@
     }
     if (!motion.cycles && !stillMoving) {
       for (const trajectory of motion.trajectories) {
-        state.positions[trajectory.s][trajectory.j] = { ...trajectory.path.p1 };
+        if (trajectory.boundaryKey === 'input') state.inputPositions[trajectory.j].x = trajectory.path.p1.x;
+        else if (trajectory.boundaryKey === 'output') state.outputPositions[trajectory.j].x = trajectory.path.p1.x;
+        else state.positions[trajectory.s][trajectory.j] = { ...trajectory.path.p1 };
       }
       state.layout = motion.targetLayout;
       const after = motion.after;
       state.motion = null;
+      recognizeCurrentLayout();
       if (after) after();
       return false;
     }
@@ -937,25 +1119,59 @@
   function startLayout(targetLayout) {
     const now = performance.now();
     state.collapseSnapshot = null;
+
+    // A named layout owns all switch stages. Cancel only stage-specific shuffle
+    // motions; INPUT/OUTPUT are explicitly reset below as part of the layout.
+    for (const key of [...state.shuffleMotions.keys()]) {
+      if (/^\d+$/.test(key) || key === 'input' || key === 'output') {
+        state.shuffleMotions.delete(key);
+      }
+    }
+
     if (state.motion) updateMotion(now);
-    const sourceLayout = state.motion ? state.motion.sourceLayout : state.layout;
     state.motion = null;
+
+    const sourceLayout = state.layout;
     const g = geometry();
 
-    if (startCyclicButterflyOmega(sourceLayout, targetLayout, now, g)) return;
+    // Butterfly is always uncollapsed. Other named layouts preserve the
+    // current collapsed state.
+    if (targetLayout === 'butterfly') state.collapsed = false;
 
     const trajectories = [];
     for (let s = 0; s < state.n; s++) {
       for (let j = 0; j < state.N; j++) {
         const start = { ...state.positions[s][j] };
-        const end = canonicalPosition(targetLayout, s, j, g);
-        const tr = trajectoryFor(s, j, start, end, false, 0, g);
+        const end = canonicalLayoutPosition(targetLayout, s, j, g, state.collapsed);
+        const tr = trajectoryFor(s, j, start, end, el.moveOnArcs.checked, 0, g);
         if (tr) trajectories.push(tr);
+      }
+    }
+
+    // INPUT and OUTPUT are also part of the named layout and therefore return
+    // to their natural grid positions whenever a layout button is selected.
+    for (const key of ['input', 'output']) {
+      const positions = boundaryPositions(key);
+      const y = key === 'input' ? g.inputY : g.outputY;
+      for (let j = 0; j < state.N; j++) {
+        const start = { x: positions[j].x, y };
+        const end = { x: g.x(j), y };
+        const tr = trajectoryFor(-1, j, start, end, el.moveOnArcs.checked, 0, g);
+        if (tr) {
+          tr.boundaryKey = key;
+          trajectories.push(tr);
+        }
       }
     }
 
     if (trajectories.length === 0) {
       state.layout = targetLayout;
+      for (let j = 0; j < state.N; j++) {
+        state.inputPositions[j].x = g.x(j);
+        state.outputPositions[j].x = g.x(j);
+      }
+      updateLayoutButtons();
+      updateOptionAvailability();
       render();
       return;
     }
@@ -966,10 +1182,12 @@
       startTime: now,
       trajectories
     };
+    updateLayoutButtons();
+    updateOptionAvailability();
     ensureTick();
   }
 
-  function startExplicitPositionMotion(targetPositions, targetLayout, after = null) {
+  function startExplicitPositionMotion(targetPositions, targetLayout, after = null, useArcs = el.moveOnArcs.checked) {
     const now = performance.now();
     if (state.motion) updateMotion(now);
     state.motion = null;
@@ -980,7 +1198,7 @@
       for (let j = 0; j < state.N; j++) {
         const start = { ...state.positions[s][j] };
         const end = targetPositions[s][j];
-        const tr = trajectoryFor(s, j, start, end, false, 0, g);
+        const tr = trajectoryFor(s, j, start, end, useArcs, 0, g);
         if (tr) trajectories.push(tr);
       }
     }
@@ -1002,6 +1220,31 @@
     ensureTick();
   }
 
+  function pairIsCollapsed(s, j, mate, positions = state.positions) {
+    const a = positions[s][j];
+    const b = positions[s][mate];
+    return Math.abs(a.x - b.x) <= 0.35 && Math.abs(a.y - b.y) <= 0.35;
+  }
+
+  function collapsedPairCount(positions = state.positions) {
+    let count = 0;
+    for (let s = 0; s < state.n; s++) {
+      const seen = new Set();
+      for (let j = 0; j < state.N; j++) {
+        if (seen.has(j)) continue;
+        const mate = j ^ (1 << s);
+        seen.add(j);
+        seen.add(mate);
+        if (pairIsCollapsed(s, j, mate, positions)) count++;
+      }
+    }
+    return count;
+  }
+
+  function allPairsCollapsed(positions = state.positions) {
+    return collapsedPairCount(positions) === state.n * state.N / 2;
+  }
+
   function pairHasNoSwitchBetween(s, j, mate, positions) {
     const x1 = positions[s][j].x;
     const x2 = positions[s][mate].x;
@@ -1019,24 +1262,62 @@
 
   function toggleCollapsePairs() {
     const now = performance.now();
+
+    // This action owns switch positions in every stage, so finish/cancel only
+    // switch-stage shuffle motions. INPUT/OUTPUT shuffles remain independent.
+    for (const key of [...state.shuffleMotions.keys()]) {
+      if (/^\d+$/.test(key)) state.shuffleMotions.delete(key);
+    }
     if (state.motion) updateMotion(now);
     state.motion = null;
 
-    // If the previous press collapsed a set of pairs, restore the exact
-    // positions that existed immediately before that operation.
-    if (state.collapseSnapshot) {
-      const snapshot = state.collapseSnapshot;
-      const restore = snapshot.positions.map(row => row.map(p => ({ ...p })));
-      const restoreLayout = snapshot.layout;
+    const g = geometry();
+    const before = state.positions.map(row => row.map(p => ({ ...p })));
+    const targets = before.map(row => row.map(p => ({ ...p })));
+
+    // 1. If ANY logical switch pair is currently collapsed, expand every
+    // currently-collapsed pair. "Left" and "right" are the pair identities
+    // defined by the stage's reverse-omega physical side, not by a potentially
+    // ambiguous tied centre position.
+    const collapsed = [];
+    for (let s = 0; s < state.n; s++) {
+      const seen = new Set();
+      for (let j = 0; j < state.N; j++) {
+        if (seen.has(j)) continue;
+        const mate = j ^ (1 << s);
+        seen.add(j);
+        seen.add(mate);
+        if (pairIsCollapsed(s, j, mate, before)) collapsed.push([s, j, mate]);
+      }
+    }
+
+    if (collapsed.length) {
+      for (const [s, j, mate] of collapsed) {
+        const sideJ = rotR(j, s, state.n) & 1;
+        const left = sideJ === 0 ? j : mate;
+        const right = sideJ === 0 ? mate : j;
+        const cx = 0.5 * (before[s][j].x + before[s][mate].x);
+        const cy = 0.5 * (before[s][j].y + before[s][mate].y);
+        targets[s][left] = { x: cx - 0.5 * g.dx, y: cy };
+        targets[s][right] = { x: cx + 0.5 * g.dx, y: cy };
+      }
+
+      state.collapsed = false;
       state.collapseSnapshot = null;
-      startExplicitPositionMotion(restore, restoreLayout);
+      startExplicitPositionMotion(targets, state.layout, () => {
+        state.collapsed = collapsedPairCount() > 0;
+        recognizeCurrentLayout();
+      }, false);
+      updateLayoutButtons();
+      updateOptionAvailability();
       return;
     }
 
-    const before = state.positions.map(row => row.map(p => ({ ...p })));
-    const target = before.map(row => row.map(p => ({ ...p })));
+    // 2. Otherwise collapse every logical pair whose two horizontal positions
+    // have no other switch centre strictly between them. This is deliberately
+    // based only on horizontal ordering; vertical offsets do not disqualify a
+    // pair. Both switches move to their geometric midpoint.
     let changed = false;
-
     for (let s = 0; s < state.n; s++) {
       const seen = new Set();
       for (let j = 0; j < state.N; j++) {
@@ -1046,30 +1327,35 @@
         seen.add(mate);
 
         if (!pairHasNoSwitchBetween(s, j, mate, before)) continue;
+
         const a = before[s][j];
         const b = before[s][mate];
-
-        // Already-overlaid pairs are left as-is unless they were created by
-        // this button, in which case the snapshot branch above restores them.
-        if (Math.abs(a.x - b.x) < 0.01 && Math.abs(a.y - b.y) < 0.01) continue;
-
-        const midpoint = { x: 0.5 * (a.x + b.x), y: 0.5 * (a.y + b.y) };
-        target[s][j] = { ...midpoint };
-        target[s][mate] = { ...midpoint };
+        const midpoint = {
+          x: 0.5 * (a.x + b.x),
+          y: 0.5 * (a.y + b.y)
+        };
+        targets[s][j] = { ...midpoint };
+        targets[s][mate] = { ...midpoint };
         changed = true;
       }
     }
 
     if (!changed) {
+      state.collapsed = false;
+      updateLayoutButtons();
+      updateOptionAvailability();
       render();
       return;
     }
 
-    state.collapseSnapshot = {
-      layout: state.layout,
-      positions: before
-    };
-    startExplicitPositionMotion(target, 'local-collapse');
+    state.collapsed = true;
+    state.collapseSnapshot = null;
+    startExplicitPositionMotion(targets, state.layout, () => {
+      state.collapsed = collapsedPairCount() > 0;
+      recognizeCurrentLayout();
+    }, false);
+    updateLayoutButtons();
+    updateOptionAvailability();
   }
 
   function updateBoxAnimation(now) {
@@ -1146,10 +1432,16 @@
   function tick(now) {
     state.tickHandle = null;
     const moving = updateMotion(now);
+    const shuffleMoving = updateShuffleMotions(now);
     const boxing = updateBoxAnimation(now);
     const auto = updateAuto(now);
     render(now);
-    if (moving || boxing || auto || state.motion || state.boxAnimation || state.auto.reverts.size) ensureTick();
+    let digitAnimating = false;
+    for (const anim of state.shuffleDigitAnimations.values()) {
+      if (now < anim.startTime + anim.durationMs) { digitAnimating = true; break; }
+    }
+    if (moving || shuffleMoving || boxing || auto || digitAnimating ||
+        state.motion || state.shuffleMotions.size || state.boxAnimation || state.auto.reverts.size) ensureTick();
   }
 
   function baseSamples(a, b) {
@@ -1271,8 +1563,8 @@
       }
     }
 
-    const inputPorts = Array.from({ length: state.N }, (_, j) => ({ x: g.x(j), y: g.inputY + g.ioH / 2 }));
-    const outputPorts = Array.from({ length: state.N }, (_, j) => ({ x: g.x(j), y: g.outputY - g.ioH / 2 }));
+    const inputPorts = Array.from({ length: state.N }, (_, j) => ({ x: state.inputPositions[j].x, y: g.inputY + g.ioH / 2 }));
+    const outputPorts = Array.from({ length: state.N }, (_, j) => ({ x: state.outputPositions[j].x, y: g.outputY - g.ioH / 2 }));
     const stageInputNodes = Array.from({ length: state.n }, () => Array(state.N));
     const stageOutputNodes = Array.from({ length: state.n }, () => Array(state.N));
     const stageSources = Array.from({ length: state.n }, () => Array(state.N));
@@ -1329,10 +1621,7 @@
 
   function renderWalls(g) {
     if (!el.walls.checked) return '';
-    const wallBaseLayout = state.layout === 'local-collapse' && state.collapseSnapshot
-      ? state.collapseSnapshot.layout
-      : state.layout;
-    if (state.motion || wallBaseLayout !== 'omega') return '';
+    if (state.motion) return '';
 
     const boxCount = state.N / 2;
     const amplitude = Math.max(2.2, Math.min(4.2, g.dx * 0.075));
@@ -1594,41 +1883,612 @@
     return result.join('');
   }
 
-  function generalizedShuffleString(stage) {
-    if (stage === 'input' || stage === 'output') {
-      return Array.from({ length: state.n }, (_, i) => String(i + 1)).join('');
+  function inferGeneralizedShuffleFromIOPositions(positions) {
+    const eps = 0.25;
+    const ordered = Array.from({ length: state.N }, (_, j) => ({ j, x: positions[j].x }))
+      .sort((a, b) => (a.x - b.x) || (a.j - b.j));
+    const rankRange = Array(state.N);
+    let start = 0;
+    while (start < ordered.length) {
+      let end = start + 1;
+      while (end < ordered.length && Math.abs(ordered[end].x - ordered[start].x) <= eps) end++;
+      for (let k = start; k < end; k++) rankRange[ordered[k].j] = [start, end - 1];
+      start = end;
     }
+    const result = [];
+    const usedLogicalBits = new Set();
+    for (let displayPos = 0; displayPos < state.n; displayPos++) {
+      const physicalBit = state.n - 1 - displayPos;
+      let match = -1;
+      for (let logicalBit = state.n - 1; logicalBit >= 0; logicalBit--) {
+        if (usedLogicalBits.has(logicalBit)) continue;
+        let ok = true;
+        for (let j = 0; j < state.N && ok; j++) {
+          const [lo, hi] = rankRange[j];
+          const expected = (j >>> logicalBit) & 1;
+          for (let rank = lo; rank <= hi; rank++) {
+            if (((rank >>> physicalBit) & 1) !== expected) { ok = false; break; }
+          }
+        }
+        if (ok) { match = logicalBit; break; }
+      }
+      if (match < 0) result.push('*');
+      else {
+        usedLogicalBits.add(match);
+        result.push(String(state.n - match));
+      }
+    }
+    return result.join('');
+  }
+
+  function generalizedShuffleString(stage) {
+    if (stage === 'input') return inferGeneralizedShuffleFromIOPositions(state.inputPositions);
+    if (stage === 'output') return inferGeneralizedShuffleFromIOPositions(state.outputPositions);
     return inferGeneralizedShuffleFromPositions(stage, state.positions[stage]);
   }
 
-  function permutationGadget(x, y, value, key, g) {
-    const fontSize = clamp(0.19 * g.dx, 7.2, 10.5);
-    const charW = Math.max(10.5, fontSize + 3.2);
-    const width = charW * state.n + 8;
-    const height = fontSize + 8;
-    const left = x;
-    const top = y - height + 2;
-    let separators = '';
-    for (let k = 1; k < state.n; k++) {
-      const sx = left + 4 + k * charW;
-      separators += `<line x1="${fmt(sx)}" y1="${fmt(top + 2.5)}" x2="${fmt(sx)}" y2="${fmt(top + height - 2.5)}" stroke="#d3d9e3" stroke-width="0.8"/>`;
-    }
-    return `<g aria-label="Address-bit permutation ${esc(value)}">` +
-      `<rect x="${fmt(left)}" y="${fmt(top)}" width="${fmt(width)}" height="${fmt(height)}" rx="4" fill="#f7f9fc" stroke="#b9c3d2" stroke-width="0.9"/>` +
-      separators +
-      `<text data-bitperm="${esc(key)}" x="${fmt(left + width / 2)}" y="${fmt(y - 1)}" text-anchor="middle" class="svg-label" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="${fmt(fontSize)}" font-weight="800" letter-spacing="${fmt(charW - fontSize)}">${esc(value)}</text>` +
-      `</g>`;
+  function shuffleGadgetMetrics(g, interactive) {
+    const fontSize = clamp(0.19 * g.dx, 7.4, 10.2);
+    // Every visible segment is the same square-ish cell: arrow cells and
+    // digit cells therefore align exactly and have identical dimensions.
+    const cell = Math.max(20, fontSize + 10);
+    const height = cell;
+    const cells = state.n + (interactive ? 2 : 0);
+    return { fontSize, cell, height, width: cells * cell, cells };
   }
 
-  function updatePermutationReadouts(root) {
+  function shuffleGadgetLeft(g, interactive) {
+    const metrics = shuffleGadgetMetrics(g, interactive);
+    // Keep a clean gap before the leftmost switch/signal. If the normal
+    // annotation column is too far right for the gadget, shift both gadget
+    // and its STAGE label left rather than allowing overlap.
+    const safeRight = g.x(0) - g.r - 13;
+    return Math.min(g.labelX, safeRight - metrics.width);
+  }
+
+  function permutationGadget(x, y, value, key, g) {
+    const stage = /^\d+$/.test(String(key)) ? Number(key) : null;
+    const interactive = true;
+    const targetKey = stage != null ? String(stage) : String(key);
+    const targetLabel = stage != null ? `stage ${stage + 1}` : String(key).toUpperCase();
+    const { fontSize, cell, height, width } = shuffleGadgetMetrics(g, interactive);
+    const left = x;
+    const top = y - height + 2;
+    const radius = 6;
+    const valueOffset = interactive ? 1 : 0;
+
+    let dividers = '';
+    const cellCount = state.n + (interactive ? 2 : 0);
+    for (let k = 1; k < cellCount; k++) {
+      const sx = left + k * cell;
+      dividers += `<line x1="${fmt(sx)}" y1="${fmt(top + 3.5)}" x2="${fmt(sx)}" y2="${fmt(top + height - 3.5)}" class="shuffle-gadget-divider"/>`;
+    }
+
+    let digits = '';
+    const editorState = state.shuffleEditors.get(String(key));
+    const editing = !!editorState;
+    if (editing) {
+      const editorX = left + valueOffset * cell + 1.5;
+      const editorY = top + 1.5;
+      const editorW = state.n * cell - 3;
+      const editorH = height - 3;
+      digits = `<foreignObject x="${fmt(editorX)}" y="${fmt(editorY)}" width="${fmt(editorW)}" height="${fmt(editorH)}">` +
+        `<input xmlns="http://www.w3.org/1999/xhtml" class="shuffle-inline-input${editorState.invalid ? ' invalid' : ''}" ` +
+        `data-shuffle-editor="${esc(String(key))}" value="${esc(editorState.value)}" maxlength="${state.n}" ` +
+        `aria-label="Shuffle identifier"/>` +
+        `</foreignObject>`;
+    } else {
+      for (let i = 0; i < state.n; i++) {
+        const cx = left + (valueOffset + i + 0.5) * cell;
+        digits += `<text data-bitperm-char="${esc(key)}:${i}" x="${fmt(cx)}" y="${fmt(top + height / 2)}" text-anchor="middle" dominant-baseline="middle" class="svg-label" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="${fmt(fontSize)}" font-weight="800">${esc(value[i] ?? '*')}</text>`;
+      }
+    }
+
+    const leftCellX = left;
+    const centerX = left + cell;
+    const rightCellX = left + (state.n + 1) * cell;
+    const arrowSize = Math.max(10.5, fontSize + 2.2);
+
+    return `<g aria-label="Shuffle controls for ${esc(targetLabel)}">` +
+      `<rect x="${fmt(left)}" y="${fmt(top)}" width="${fmt(width)}" height="${fmt(height)}" rx="${fmt(radius)}" class="shuffle-gadget-shell"/>` +
+
+      `<g class="shuffle-gadget-button" data-shuffle-action="shuffle" data-shuffle-key="${esc(targetKey)}" aria-label="Perfect shuffle ${esc(targetLabel)}">` +
+        `<rect class="shuffle-gadget-hover" x="${fmt(leftCellX + 1)}" y="${fmt(top + 1)}" width="${fmt(cell - 2)}" height="${fmt(height - 2)}" rx="${fmt(radius - 1)}" fill="transparent"/>` +
+        `<rect class="shuffle-gadget-hit" x="${fmt(leftCellX)}" y="${fmt(top)}" width="${fmt(cell)}" height="${fmt(height)}"/>` +
+        `<text x="${fmt(leftCellX + cell / 2)}" y="${fmt(top + height / 2)}" text-anchor="middle" dominant-baseline="middle" class="shuffle-gadget-arrow" font-size="${fmt(arrowSize)}">&lt;&lt;</text>` +
+      `</g>` +
+
+      `<g class="shuffle-gadget-button" data-shuffle-action="set" data-shuffle-key="${esc(targetKey)}" aria-label="Set ${esc(targetLabel)} shuffle identifier">` +
+        `<rect class="shuffle-gadget-hover" x="${fmt(centerX + 1)}" y="${fmt(top + 1)}" width="${fmt(state.n * cell - 2)}" height="${fmt(height - 2)}" fill="transparent"/>` +
+        `<rect class="shuffle-gadget-hit" x="${fmt(centerX)}" y="${fmt(top)}" width="${fmt(state.n * cell)}" height="${fmt(height)}"/>` +
+        digits +
+      `</g>` +
+
+      `<g class="shuffle-gadget-button" data-shuffle-action="unshuffle" data-shuffle-key="${esc(targetKey)}" aria-label="Perfect unshuffle ${esc(targetLabel)}">` +
+        `<rect class="shuffle-gadget-hover" x="${fmt(rightCellX + 1)}" y="${fmt(top + 1)}" width="${fmt(cell - 2)}" height="${fmt(height - 2)}" rx="${fmt(radius - 1)}" fill="transparent"/>` +
+        `<rect class="shuffle-gadget-hit" x="${fmt(rightCellX)}" y="${fmt(top)}" width="${fmt(cell)}" height="${fmt(height)}"/>` +
+        `<text x="${fmt(rightCellX + cell / 2)}" y="${fmt(top + height / 2)}" text-anchor="middle" dominant-baseline="middle" class="shuffle-gadget-arrow" font-size="${fmt(arrowSize)}">&gt;&gt;</text>` +
+      `</g>` +
+
+      dividers +
+    `</g>`;
+  }
+
+  function updatePermutationReadouts(root, now = performance.now()) {
     if (!root) return;
-    root.querySelectorAll('[data-bitperm]').forEach(node => {
-      const key = node.getAttribute('data-bitperm');
-      const value = key === 'input' || key === 'output'
-        ? generalizedShuffleString(key)
-        : generalizedShuffleString(Number(key));
-      if (node.textContent !== value) node.textContent = value;
+    const cache = new Map();
+
+    root.querySelectorAll('[data-bitperm-char]').forEach(node => {
+      const token = node.getAttribute('data-bitperm-char');
+      const split = token.lastIndexOf(':');
+      const key = token.slice(0, split);
+      const index = Number(token.slice(split + 1));
+      const anim = state.shuffleDigitAnimations.get(key);
+      const active = anim && now < anim.startTime + anim.durationMs;
+      const progress = active ? clamp((now - anim.startTime) / anim.durationMs) : 1;
+
+      if (active) {
+        node.removeAttribute('transform');
+        node.style.opacity = '1';
+
+        if (anim.reverseMode) {
+          if (progress < 0.5) {
+            node.textContent = anim.from[index] ?? '*';
+            node.style.opacity = String(1 - progress * 2);
+          } else {
+            node.textContent = anim.to[index] ?? '*';
+            node.style.opacity = String((progress - 0.5) * 2);
+          }
+          return;
+        }
+
+        const n = state.n;
+        const cell = anim.cell;
+        const right = anim.direction === 'unshuffle';
+        const disappearing = right ? n - 1 : 0;
+
+        if (progress < 0.25) {
+          node.textContent = anim.from[index] ?? '*';
+          if (index === disappearing) node.style.opacity = String(1 - progress / 0.25);
+        } else if (progress < 0.75) {
+          const t = (progress - 0.25) / 0.5;
+          node.textContent = anim.from[index] ?? '*';
+          if (index === disappearing) {
+            node.style.opacity = '0';
+          } else {
+            const delta = right ? cell * t : -cell * t;
+            node.setAttribute('transform', `translate(${fmt(delta)} 0)`);
+          }
+        } else {
+          node.removeAttribute('transform');
+          const arriving = right ? 0 : n - 1;
+          node.textContent = anim.to[index] ?? '*';
+          if (index === arriving) node.style.opacity = String((progress - 0.75) / 0.25);
+        }
+        return;
+      }
+
+      if (anim) state.shuffleDigitAnimations.delete(key);
+      node.removeAttribute('transform');
+      node.style.opacity = '1';
+
+      if (!cache.has(key)) {
+        const value = key === 'input' || key === 'output'
+          ? generalizedShuffleString(key)
+          : generalizedShuffleString(Number(key));
+        cache.set(key, value);
+      }
+      const ch = cache.get(key)[index] ?? '*';
+      if (node.textContent !== ch) node.textContent = ch;
     });
+  }
+
+  function rankForShuffleIdentifier(j, identifier) {
+    let rank = 0;
+    for (let displayPos = 0; displayPos < state.n; displayPos++) {
+      const digit = Number(identifier[displayPos]);
+      const logicalBit = state.n - digit;
+      const physicalBit = state.n - 1 - displayPos;
+      rank |= ((j >>> logicalBit) & 1) << physicalBit;
+    }
+    return rank;
+  }
+
+  function validShuffleIdentifier(value) {
+    if (typeof value !== 'string' || value.length !== state.n) return false;
+    const expected = new Set(Array.from({ length: state.n }, (_, i) => String(i + 1)));
+    for (const ch of value) {
+      if (!expected.delete(ch)) return false;
+    }
+    return expected.size === 0;
+  }
+
+  function switchOutputX(stage, j, g = geometry()) {
+    const d = g.r / Math.SQRT2;
+    const side = rotR(j, stage, state.n) & 1;
+    return state.positions[stage][j].x + (side === 0 ? -d : d);
+  }
+
+  function sortedRanksByX(items) {
+    const sorted = items.slice().sort((a, b) => (a.x - b.x) || (a.j - b.j));
+    const rank = Array(state.N);
+    sorted.forEach((item, i) => { rank[item.j] = i; });
+    return rank;
+  }
+
+  function stageAutoAlignTargets(stage, g = geometry()) {
+    const rank = sortedRanksByX(
+      Array.from({ length: state.N }, (_, j) => ({ j, x: switchOutputX(stage, j, g) }))
+    );
+    const targets = Array.from({ length: state.N }, (_, j) => ({
+      x: g.x(rank[j]),
+      y: g.stageY(stage)
+    }));
+
+    // Preserve any currently collapsed logical pair. Its two output ports still
+    // establish two adjacent ranks; the centres remain overlaid at the midpoint
+    // between the ordinary grid positions assigned to those two ranks.
+    const eps = 0.35;
+    const seen = new Set();
+    for (let j = 0; j < state.N; j++) {
+      if (seen.has(j)) continue;
+      const mate = j ^ (1 << stage);
+      seen.add(j); seen.add(mate);
+      const a = state.positions[stage][j];
+      const b = state.positions[stage][mate];
+      if (Math.abs(a.x - b.x) <= eps && Math.abs(a.y - b.y) <= eps) {
+        const mid = 0.5 * (g.x(rank[j]) + g.x(rank[mate]));
+        targets[j] = { x: mid, y: g.stageY(stage) };
+        targets[mate] = { x: mid, y: g.stageY(stage) };
+      }
+    }
+    return targets;
+  }
+
+  function boundaryAutoAlignTargets(key, g = geometry()) {
+    const positions = boundaryPositions(key);
+    const rank = sortedRanksByX(
+      Array.from({ length: state.N }, (_, j) => ({ j, x: positions[j].x }))
+    );
+    return Array.from({ length: state.N }, (_, j) => g.x(rank[j]));
+  }
+
+  function targetsDiffer(current, targets, tolerance = 0.35) {
+    for (let j = 0; j < state.N; j++) {
+      const tx = typeof targets[j] === 'number' ? targets[j] : targets[j].x;
+      if (Math.abs(current[j].x - tx) > tolerance) return true;
+    }
+    return false;
+  }
+
+  function autoAlignStage(stage) {
+    if (!el.autoAlign.checked || state.drag || state.autoAligning) return false;
+    const g = geometry();
+    const targetsForStage = stageAutoAlignTargets(stage, g);
+    if (!targetsDiffer(state.positions[stage], targetsForStage)) return false;
+
+    const target = state.positions.map(row => row.map(p => ({ ...p })));
+    target[stage] = targetsForStage;
+    state.autoAligning = true;
+    startExplicitPositionMotion(target, 'custom', () => {
+      state.autoAligning = false;
+      recognizeCurrentLayout();
+    });
+    return true;
+  }
+
+  function autoAlignBoundary(key) {
+    if (!el.autoAlign.checked || state.drag || state.autoAligning) return false;
+    const g = geometry();
+    const targets = boundaryAutoAlignTargets(key, g);
+    const positions = boundaryPositions(key);
+    if (!targetsDiffer(positions, targets)) return false;
+    state.autoAligning = true;
+    startBoundaryMotion(key, targets, () => {
+      state.autoAligning = false;
+      recognizeCurrentLayout();
+    });
+    return true;
+  }
+
+  function autoAlignAll() {
+    if (!el.autoAlign.checked || state.drag) return;
+
+    const g = geometry();
+    const stageTargets = state.positions.map(row => row.map(p => ({ ...p })));
+    let stageChanged = false;
+    for (let s = 0; s < state.n; s++) {
+      const t = stageAutoAlignTargets(s, g);
+      if (targetsDiffer(state.positions[s], t)) {
+        stageTargets[s] = t;
+        stageChanged = true;
+      }
+    }
+
+    // Boundary alignment is independent of switch-stage alignment. On enable,
+    // align both boundaries immediately to their sorted grid ranks; subsequent
+    // drag/drop alignment is animated per boundary.
+    for (const key of ['input', 'output']) {
+      const t = boundaryAutoAlignTargets(key, g);
+      const p = boundaryPositions(key);
+      if (targetsDiffer(p, t)) {
+        for (let j = 0; j < state.N; j++) p[j].x = t[j];
+      }
+    }
+
+    if (stageChanged) {
+      state.autoAligning = true;
+      startExplicitPositionMotion(stageTargets, 'custom', () => {
+        state.autoAligning = false;
+        recognizeCurrentLayout();
+      });
+    } else {
+      render();
+    }
+  }
+
+  function motionDurationMs(trajectories) {
+    let seconds = 0;
+    for (const tr of trajectories) seconds = Math.max(seconds, tr.profile.total);
+    return Math.max(1, seconds * 1000);
+  }
+
+  function boundaryPositions(key) {
+    return key === 'input' ? state.inputPositions : state.outputPositions;
+  }
+
+  function shuffleTargetPosition(key, j, rank, g) {
+    if (key === 'input') return { x: g.x(rank), y: g.inputY };
+    if (key === 'output') return { x: g.x(rank), y: g.outputY };
+    return { x: g.x(rank), y: g.stageY(Number(key)) };
+  }
+
+  function currentShufflePosition(key, j, g) {
+    if (key === 'input') return { x: state.inputPositions[j].x, y: g.inputY };
+    if (key === 'output') return { x: state.outputPositions[j].x, y: g.outputY };
+    return { ...state.positions[Number(key)][j] };
+  }
+
+  function assignShufflePosition(key, j, p) {
+    if (key === 'input') state.inputPositions[j].x = p.x;
+    else if (key === 'output') state.outputPositions[j].x = p.x;
+    else state.positions[Number(key)][j] = { x: p.x, y: p.y };
+  }
+
+  function updateOneShuffleMotion(key, motion, now) {
+    const elapsed = (now - motion.startTime) / 1000;
+    let moving = false;
+    for (const tr of motion.trajectories) {
+      const localTime = Math.min(elapsed, tr.profile.total);
+      const traveled = tr.profile.distanceAt(localTime);
+      const fraction = tr.distancePositions > 0 ? traveled / tr.distancePositions : 1;
+      const t = invertArcLength(tr.lut, tr.lengthPx, fraction);
+      assignShufflePosition(key, tr.j, pathPoint(tr.path, t));
+      if (elapsed < tr.profile.total) moving = true;
+    }
+    if (!moving) {
+      for (const tr of motion.trajectories) assignShufflePosition(key, tr.j, tr.path.p1);
+      state.shuffleMotions.delete(key);
+      recognizeCurrentLayout();
+      if (motion.after) motion.after();
+      return false;
+    }
+    return true;
+  }
+
+  function updateShuffleMotions(now) {
+    let any = false;
+    for (const [key, motion] of [...state.shuffleMotions.entries()]) {
+      if (updateOneShuffleMotion(key, motion, now)) any = true;
+    }
+    return any;
+  }
+
+  function startShuffleMotion(key, rankForLogicalIndex, after = null) {
+    key = String(key);
+    const now = performance.now();
+
+    // Only replace a motion belonging to THIS gadget. Other gadgets continue.
+    const existing = state.shuffleMotions.get(key);
+    if (existing) updateOneShuffleMotion(key, existing, now);
+
+    const g = geometry();
+    const trajectories = [];
+    const stage = /^\d+$/.test(key) ? Number(key) : -1;
+    for (let j = 0; j < state.N; j++) {
+      const start = currentShufflePosition(key, j, g);
+      const end = shuffleTargetPosition(key, j, rankForLogicalIndex(j), g);
+      const tr = trajectoryFor(stage, j, start, end, el.moveOnArcs.checked, 0, g);
+      if (tr) trajectories.push(tr);
+    }
+
+    if (!trajectories.length) {
+      state.shuffleMotions.delete(key);
+      if (after) after();
+      render();
+      return 1;
+    }
+
+    state.shuffleMotions.set(key, { key, startTime: now, trajectories, after });
+    if (stage >= 0) {
+      state.layout = 'custom';
+      state.collapseSnapshot = null;
+      state.collapsed = collapsedPairCount() > 0;
+    }
+    ensureTick();
+    return motionDurationMs(trajectories);
+  }
+
+  function moveBoundaryToRanks(key, rankForLogicalIndex) {
+    return startShuffleMotion(String(key), rankForLogicalIndex);
+  }
+
+  function moveStageToRanks(stage, rankForLogicalIndex) {
+    if (!(stage >= 0 && stage < state.n)) return 1;
+    const duration = startShuffleMotion(String(stage), rankForLogicalIndex, () => {
+      recognizeCurrentLayout();
+    });
+    updateLayoutButtons();
+    updateOptionAvailability();
+    return duration;
+  }
+
+  function currentRanksForShuffleKey(key) {
+    const positions = key === 'input' ? state.inputPositions :
+      key === 'output' ? state.outputPositions : state.positions[Number(key)];
+    const stage = /^\d+$/.test(String(key)) ? Number(key) : null;
+    const g = geometry();
+    const d = g.r / Math.SQRT2;
+    const ranked = Array.from({ length: state.N }, (_, j) => {
+      let x = positions[j].x;
+      if (stage != null) {
+        const side = rotR(j, stage, state.n) & 1;
+        x += side === 0 ? -d : d;
+      }
+      return { j, x };
+    }).sort((a, b) => (a.x - b.x) || (a.j - b.j));
+    const rankOf = Array(state.N);
+    ranked.forEach((item, rank) => { rankOf[item.j] = rank; });
+    return rankOf;
+  }
+
+  function beginShuffleDigitAnimation(key, direction, from, to, durationMs) {
+    const g = geometry();
+    state.shuffleDigitAnimations.set(String(key), {
+      key: String(key),
+      direction,
+      from,
+      to,
+      startTime: performance.now(),
+      durationMs: Math.max(120, durationMs),
+      cell: shuffleGadgetMetrics(g, true).cell
+    });
+  }
+
+  function reverseIdentifier(value) {
+    return String(value).split('').reverse().join('');
+  }
+
+  function reverseAllShuffles() {
+    const keys = ['input', ...Array.from({ length: state.n }, (_, s) => String(s)), 'output'];
+
+    // Each gadget remains independent. Start/replace only the motion belonging
+    // to that gadget.
+    for (const key of keys) {
+      const id = key === 'input' || key === 'output' ? key : Number(key);
+      const current = generalizedShuffleString(id);
+
+      // If a custom ordering is only partially recognized, reversing the
+      // identifier is not well-defined. Leave that gadget untouched.
+      if (current.includes('*')) continue;
+
+      const target = reverseIdentifier(current);
+      const rankFn = j => rankForShuffleIdentifier(j, target);
+
+      let durationMs;
+      if (key === 'input' || key === 'output') {
+        durationMs = moveBoundaryToRanks(key, rankFn);
+      } else {
+        durationMs = moveStageToRanks(Number(key), rankFn);
+      }
+
+      // Reverse is not a one-step cyclic shuffle, so use a simple cross-fade
+      // between identifiers rather than the rotate-digit animation.
+      state.shuffleDigitAnimations.set(String(key), {
+        key: String(key),
+        direction: 'reverse',
+        from: current,
+        to: target,
+        startTime: performance.now(),
+        durationMs: Math.max(120, durationMs),
+        cell: shuffleGadgetMetrics(geometry(), true).cell,
+        reverseMode: true
+      });
+    }
+
+    state.layout = 'custom';
+    updateLayoutButtons();
+    ensureTick();
+  }
+
+  function applyPerfectShuffle(key, direction) {
+    key = String(key);
+    const current = generalizedShuffleString(key === 'input' || key === 'output' ? key : Number(key));
+    const rankOf = currentRanksForShuffleKey(key);
+    const rankFn = j => direction === 'unshuffle'
+      ? rotR(rankOf[j], 1, state.n)
+      : rotL(rankOf[j], 1, state.n);
+
+    let durationMs;
+    if (key === 'input' || key === 'output') durationMs = moveBoundaryToRanks(key, rankFn);
+    else durationMs = moveStageToRanks(Number(key), rankFn);
+
+    if (!current.includes('*')) {
+      const to = direction === 'unshuffle'
+        ? current[current.length - 1] + current.slice(0, -1)
+        : current.slice(1) + current[0];
+      beginShuffleDigitAnimation(key, direction, current, to, durationMs);
+    }
+  }
+
+  function refreshShuffleEditorSurface(now = performance.now()) {
+    const hasAnimatedSwitches = !!state.motion ||
+      [...state.shuffleMotions.keys()].some(k => /^\d+$/.test(k));
+    if (hasAnimatedSwitches) {
+      deactivateMotionSurfaces();
+      fullRender(now);
+      renderMotionFrame(now);
+    } else {
+      render(now);
+    }
+  }
+
+  function beginShuffleEdit(key) {
+    key = String(key);
+    const id = key === 'input' || key === 'output' ? key : Number(key);
+    const current = generalizedShuffleString(id);
+    state.shuffleEditors.set(key, {
+      key,
+      value: current.includes('*')
+        ? Array.from({ length: state.n }, (_, i) => String(i + 1)).join('')
+        : current,
+      invalid: false
+    });
+    refreshShuffleEditorSurface();
+    requestAnimationFrame(() => {
+      const input = el.svg.querySelector(`.shuffle-inline-input[data-shuffle-editor="${CSS.escape(key)}"]`) ||
+                    el.motionOverlay.querySelector(`.shuffle-inline-input[data-shuffle-editor="${CSS.escape(key)}"]`);
+      if (input) { input.focus(); input.select(); }
+    });
+  }
+
+  function commitShuffleEdit(input, cancel = false) {
+    if (!input) return;
+    const key = String(input.dataset.shuffleEditor);
+    const editor = state.shuffleEditors.get(key);
+    if (!editor) return;
+
+    if (cancel) {
+      state.shuffleEditors.delete(key);
+      refreshShuffleEditorSurface();
+      return;
+    }
+
+    const identifier = String(input.value ?? editor.value).trim();
+    if (!validShuffleIdentifier(identifier)) {
+      editor.value = identifier;
+      editor.invalid = true;
+      input.classList.add('invalid');
+      input.focus();
+      input.select();
+      return;
+    }
+
+    state.shuffleEditors.delete(key);
+    const rankFn = j => rankForShuffleIdentifier(j, identifier);
+    if (key === 'input' || key === 'output') moveBoundaryToRanks(key, rankFn);
+    else moveStageToRanks(Number(key), rankFn);
+    refreshShuffleEditorSurface();
   }
 
   function renderIOBox(g, x, y, signal, kind, j) {
@@ -1661,13 +2521,16 @@
     const indexEven = (bitIndex & 1) === 0;
     const indexX = indexEven ? x + g.ioW / 2 - 1.5 : x - g.ioW / 2 + 1.5;
     const indexAnchor = indexEven ? 'end' : 'start';
-    return `${glow}${core}${sparkle}` +
+    return `<g data-io-decal="${kind}" data-io-j="${j}" data-io-base-x="${fmt(x)}">` +
+      `${glow}${core}${sparkle}` +
       `<text x="${fmt(x)}" y="${fmt(textY)}" text-anchor="middle" class="svg-label" font-size="${fmt(fontSize)}" font-weight="700">${esc(signal.label)}</text>` +
       `<text x="${fmt(bitX)}" y="${fmt(bitY)}" text-anchor="end" class="svg-label" font-size="${fmt(bitSize)}" font-weight="800">${value === 2 ? 'X' : value}</text>` +
-      `<text x="${fmt(indexX)}" y="${fmt(indexY)}" text-anchor="${indexAnchor}" class="svg-label" font-size="${fmt(clamp(g.dx * 0.15, 6, 9))}" fill="#687487">${bitIndex}</text>`;
+      `<text x="${fmt(indexX)}" y="${fmt(indexY)}" text-anchor="${indexAnchor}" class="svg-label" font-size="${fmt(clamp(g.dx * 0.15, 6, 9))}" fill="#687487">${bitIndex}</text>` +
+      `</g>`;
   }
 
   function fullRender(now = performance.now()) {
+    updateOptionAvailability();
     const g = geometry();
     const vg = visualGeometry(g);
     const { inactiveD, oneD, zeroD, triD, shadedD } = buildRoutePathData(g, vg);
@@ -1768,36 +2631,37 @@
     }
 
     const inputFont = clamp(g.dx * 0.18, 7, 10);
-    annotations += `<text x="${fmt(g.labelX)}" y="${fmt(g.inputY + 4)}" class="svg-label" font-size="12" font-weight="800">INPUT</text>`;
-    annotations += `<text x="${fmt(g.labelX)}" y="${fmt(g.outputY + 4)}" class="svg-label" font-size="12" font-weight="800">OUTPUT</text>`;
+    const readoutX = el.generalizedShuffle.checked ? shuffleGadgetLeft(g, true) : g.labelX;
+    const stageGadgetX = el.generalizedShuffle.checked ? shuffleGadgetLeft(g, true) : g.labelX;
+    // When the interactive shuffle gadget needs additional room, shift the
+    // STAGE label with it so both annotations remain visually aligned.
+    const stageLabelX = el.generalizedShuffle.checked ? Math.min(g.labelX, stageGadgetX) : g.labelX;
+
+    annotations += `<text x="${fmt(readoutX)}" y="${fmt(g.inputY + 4)}" class="svg-label" font-size="12" font-weight="800">INPUT</text>`;
+    annotations += `<text x="${fmt(readoutX)}" y="${fmt(g.outputY + 4)}" class="svg-label" font-size="12" font-weight="800">OUTPUT</text>`;
     for (let s = 0; s < state.n; s++) {
-      annotations += `<text x="${fmt(g.labelX)}" y="${fmt(g.stageY(s) + 4)}" class="svg-label" font-size="12" font-weight="800">STAGE ${s + 1}</text>`;
+      annotations += `<text x="${fmt(stageLabelX)}" y="${fmt(g.stageY(s) + 4)}" class="svg-label" font-size="12" font-weight="800">STAGE ${s + 1}</text>`;
     }
 
-    // Optional passive generalized-shuffle readouts. Input/output remain in
-    // natural index order; each stage is inferred from its current horizontal
-    // switch ordering and may therefore contain '*' for non-bit-permutation
-    // regions. All gadgets are placed below the layer they describe.
     if (el.generalizedShuffle.checked) {
-      const gadgetX = g.labelX;
-      annotations += permutationGadget(gadgetX, g.inputY + g.ioH / 2 + 22, generalizedShuffleString('input'), 'input', g);
+      annotations += permutationGadget(readoutX, g.inputY + g.ioH / 2 + 22, generalizedShuffleString('input'), 'input', g);
       for (let s = 0; s < state.n; s++) {
-        annotations += permutationGadget(gadgetX, g.stageY(s) + g.r + 24, generalizedShuffleString(s), String(s), g);
+        annotations += permutationGadget(stageGadgetX, g.stageY(s) + g.r + 24, generalizedShuffleString(s), String(s), g);
       }
-      // Mirror the INPUT gadget placement: immediately below the OUTPUT layer,
-      // at the left-side annotation column. The centered MSB/LSB labels are
-      // horizontally separate and therefore do not require extra vertical gap.
-      annotations += permutationGadget(gadgetX, g.outputY + g.ioH / 2 + 22, generalizedShuffleString('output'), 'output', g);
+      annotations += permutationGadget(readoutX, g.outputY + g.ioH / 2 + 22, generalizedShuffleString('output'), 'output', g);
     }
-    annotations += `<text x="${fmt(g.x(0))}" y="${fmt(g.inputY - g.ioH / 2 - 18)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">MSB</text>`;
-    annotations += `<text x="${fmt(g.x(state.N - 1))}" y="${fmt(g.inputY - g.ioH / 2 - 18)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">LSB</text>`;
-    annotations += `<text x="${fmt(g.x(0))}" y="${fmt(g.outputY + g.ioH / 2 + 25)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">MSB</text>`;
-    annotations += `<text x="${fmt(g.x(state.N - 1))}" y="${fmt(g.outputY + g.ioH / 2 + 25)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">LSB</text>`;
+    annotations += `<text x="${fmt(state.inputPositions[0].x)}" y="${fmt(g.inputY - g.ioH / 2 - 18)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">MSB</text>`;
+    annotations += `<text x="${fmt(state.inputPositions[state.N - 1].x)}" y="${fmt(g.inputY - g.ioH / 2 - 18)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">LSB</text>`;
+    annotations += `<text x="${fmt(state.outputPositions[0].x)}" y="${fmt(g.outputY + g.ioH / 2 + 25)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">MSB</text>`;
+    annotations += `<text x="${fmt(state.outputPositions[state.N - 1].x)}" y="${fmt(g.outputY + g.ioH / 2 + 25)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">LSB</text>`;
 
     for (let j = 0; j < state.N; j++) {
-      ioLayer += renderIOBox(g, g.x(j), g.inputY, state.inputs[j], 'input', j);
-      ioLayer += renderIOBox(g, g.x(j), g.outputY, finalLayer[j], 'output', j);
-      hits += `<rect class="hit" data-type="input" data-j="${j}" tabindex="0" role="button" aria-label="Input ${j}, value ${state.inputs[j].value === 2 ? 'X' : state.inputs[j].value}: toggle bit" x="${fmt(g.x(j) - g.ioW / 2 - 3)}" y="${fmt(g.inputY - g.ioH / 2 - 3)}" width="${fmt(g.ioW + 6)}" height="${fmt(g.ioH + 6)}" rx="3"/>`;
+      const ix = state.inputPositions[j].x;
+      const ox = state.outputPositions[j].x;
+      ioLayer += renderIOBox(g, ix, g.inputY, state.inputs[j], 'input', j);
+      ioLayer += renderIOBox(g, ox, g.outputY, finalLayer[j], 'output', j);
+      hits += `<rect class="hit" data-type="input" data-j="${j}" tabindex="0" role="button" aria-label="Input ${j}, value ${state.inputs[j].value === 2 ? 'X' : state.inputs[j].value}: click to toggle, drag to move" x="${fmt(ix - g.ioW / 2 - 3)}" y="${fmt(g.inputY - g.ioH / 2 - 3)}" width="${fmt(g.ioW + 6)}" height="${fmt(g.ioH + 6)}" rx="3"/>`;
+      hits += `<rect class="hit" data-type="output" data-j="${j}" tabindex="0" role="button" aria-label="Output ${j}: drag to move" x="${fmt(ox - g.ioW / 2 - 3)}" y="${fmt(g.outputY - g.ioH / 2 - 3)}" width="${fmt(g.ioW + 6)}" height="${fmt(g.ioH + 6)}" rx="3"/>`;
     }
 
     const mobile = window.matchMedia('(max-width: 760px)').matches;
@@ -1847,6 +2711,15 @@
       `<g id="ioDecals">${ioLayer}</g>` +
       `<g id="hitTargets">${hits}</g>`;
 
+    updatePermutationReadouts(el.svg, now);
+    if (state.shuffleEditors.size) {
+      requestAnimationFrame(() => {
+        if (document.activeElement && document.activeElement.classList &&
+            document.activeElement.classList.contains('shuffle-inline-input')) return;
+        const input = el.svg.querySelector('.shuffle-inline-input');
+        if (input) { input.focus(); input.select(); }
+      });
+    }
     updateStatus();
     updateLayoutButtons();
   }
@@ -1885,9 +2758,29 @@
     overlay.replaceChildren();
     for (const id of ['boxFronts','annotations','ioDecals']) {
       const source = el.svg.querySelector(`#${id}`);
-      if (source) overlay.appendChild(source.cloneNode(true));
+      if (source) {
+        const clone = source.cloneNode(true);
+        // renderMotionFrame hides the corresponding base groups before this
+        // overlay is prepared. Do not inherit that hidden presentation state.
+        clone.style.visibility = 'visible';
+        overlay.appendChild(clone);
+      }
     }
     overlay.querySelectorAll('text[data-switch-label="1"]').forEach(node => node.remove());
+  }
+
+  function updateMotionOverlayIODecals() {
+    if (!el.motionOverlay) return;
+    el.motionOverlay.querySelectorAll('[data-io-decal]').forEach(node => {
+      const kind = node.getAttribute('data-io-decal');
+      const j = Number(node.getAttribute('data-io-j'));
+      const baseX = Number(node.getAttribute('data-io-base-x'));
+      const currentX = kind === 'input'
+        ? state.inputPositions[j].x
+        : state.outputPositions[j].x;
+      const dx = currentX - baseX;
+      node.setAttribute('transform', `translate(${fmt(dx)} 0)`);
+    });
   }
 
   function deactivateMotionSurfaces() {
@@ -2049,12 +2942,13 @@
   }
 
   function renderMotionFrame(now = performance.now()) {
-    if (!state.motion || state.boxAnimation || (state.boxProgress > 0.001 && state.boxProgress < 0.999) || typeof Path2D === 'undefined') return false;
+    const hasSwitchMotion = !!state.motion || [...state.shuffleMotions.keys()].some(k => /^\d+$/.test(k));
+    if (!hasSwitchMotion || state.boxAnimation || (state.boxProgress > 0.001 && state.boxProgress < 0.999) || typeof Path2D === 'undefined') return false;
     const g=geometry(), vg=visualGeometry(g);
     const switchHits=el.svg.querySelectorAll('#hitTargets .hit[data-type="switch"]');
     if (!el.motionGuideCanvas || !el.motionCanvas || !el.motionOverlay || switchHits.length!==state.n*state.N) return false;
 
-    for (const selector of ['#switchBacks','#inactiveRoutes','#signalGlows','#signalCores','#switchFronts']) {
+    for (const selector of ['#switchBacks','#inactiveRoutes','#signalGlows','#signalCores','#switchFronts','#ioDecals']) {
       const node=el.svg.querySelector(selector); if (node) node.style.visibility='hidden';
     }
     const guides=el.svg.querySelector('#guides'); if (guides) guides.style.visibility='hidden';
@@ -2062,19 +2956,20 @@
     el.motionGuideCanvas.style.display='block';
     el.motionCanvas.style.display='block';
     el.motionOverlay.style.display='block';
+    updateMotionOverlayIODecals();
 
     drawMotionGuides(motionCanvasContext(el.motionGuideCanvas,g),g);
     const ctx = motionCanvasContext(el.motionCanvas,g);
     drawMotionBack(ctx,g,vg);
     drawMotionFront(ctx,g,vg);
-    updatePermutationReadouts(el.motionOverlay);
+    updatePermutationReadouts(el.motionOverlay, now);
 
-    for (const hit of switchHits) hit.style.pointerEvents='none';
-    const statusKey = state.motion.cycles ? state.motion.cycleIndex : -1;
-    if (state.motion.lastStatusKey !== statusKey) {
-      state.motion.lastStatusKey = statusKey;
+    for (const hit of switchHits) hit.style.pointerEvents = state.motion ? 'none' : '';
+    if (state.motion && !state.motion.lastStatusUpdated) {
+      state.motion.lastStatusUpdated = true;
       updateStatus();
       updateLayoutButtons();
+      updateOptionAvailability();
     }
     return true;
   }
@@ -2092,6 +2987,46 @@
       button.classList.toggle('active', active);
       button.setAttribute('aria-pressed', String(active));
     }
+
+    const hasCollapsed = collapsedPairCount() > 0;
+    state.collapsed = hasCollapsed;
+    el.collapsePairs.disabled = !!state.motion;
+    el.collapsePairs.classList.toggle('active', hasCollapsed);
+    el.collapsePairs.setAttribute('aria-pressed', String(hasCollapsed));
+  }
+
+  function setCheckboxAvailability(input, enabled) {
+    if (!enabled && input.checked) input.checked = false;
+    input.disabled = !enabled;
+    const label = input.closest('label');
+    if (label) label.classList.toggle('option-disabled', !enabled);
+  }
+
+  function updateOptionAvailability() {
+    const settledLayout = state.motion ? null : state.layout;
+    const boxesOn = el.boxes.checked;
+
+    // Bands/checks/stars are box annotations and have no visible effect while
+    // boxes are disabled.
+    setCheckboxAvailability(el.upper, boxesOn);
+    setCheckboxAvailability(el.lower, boxesOn);
+    setCheckboxAvailability(el.checks, boxesOn);
+    setCheckboxAvailability(el.stars, boxesOn && el.lower.checked);
+
+    // Walls are a static visual aid and are always available.
+    setCheckboxAvailability(el.walls, true);
+
+    // Pair arcs vanish when every pair is overlaid in a collapsed named layout.
+    setCheckboxAvailability(el.pairArcs, !allPairsCollapsed());
+
+    // These options always have an effect in every settled layout.
+    setCheckboxAvailability(el.switchLabels, true);
+    setCheckboxAvailability(el.shades, true);
+    setCheckboxAvailability(el.generalizedShuffle, true);
+    setCheckboxAvailability(el.moveOnArcs, true);
+    setCheckboxAvailability(el.autoAlign, true);
+    setCheckboxAvailability(el.boxes, true);
+    setCheckboxAvailability(el.auto, true);
   }
 
   function updateStatus() {
@@ -2099,18 +3034,17 @@
       butterfly: 'reverse butterfly',
       omega: 'reverse omega',
       rnetwork: 'R-network',
-      'local-collapse': 'locally collapsed',
       custom: 'custom dragged layout'
     };
     const layoutText = state.motion
-      ? `moving ${layoutNames[state.motion.sourceLayout] || state.motion.sourceLayout} → ${layoutNames[state.motion.targetLayout]}${state.motion.cycles ? ` (cycle ${state.motion.cycleIndex + 1}/${state.motion.cycles.length})` : ''}`
+      ? `moving ${layoutNames[state.motion.sourceLayout] || state.motion.sourceLayout} → ${layoutNames[state.motion.targetLayout] || state.motion.targetLayout}`
       : (layoutNames[state.layout] || state.layout);
     const checks = state.carry.flat().filter(c => c.check).length;
     const totalChecks = state.n * state.N / 2;
     const fields = [
       `N=${state.N}`,
       `stages=${state.n}`,
-      `layout=${layoutText}`,
+      `layout=${layoutText}${state.collapsed ? ' + collapsed' : ''}`,
       `auto=${state.auto.enabled ? (state.auto.reverts.size ? `${state.auto.reverts.size} temporary override${state.auto.reverts.size === 1 ? '' : 's'}` : 'on') : 'off'}`,
       `self-test=${state.diagnostics.ok ? 'PASS' : 'FAIL'}`
     ];
@@ -2229,13 +3163,17 @@
         moved: false
       };
     } else {
+      const j = target.dataset.j === undefined ? undefined : Number(target.dataset.j);
+      const ioPosition = type === 'input' ? state.inputPositions[j] :
+        type === 'output' ? state.outputPositions[j] : null;
       state.drag = {
         pointerId: event.pointerId,
         type,
-        j: target.dataset.j === undefined ? undefined : Number(target.dataset.j),
+        j,
         s: target.dataset.s === undefined ? undefined : Number(target.dataset.s),
         q: target.dataset.q === undefined ? undefined : Number(target.dataset.q),
         startPointer: point,
+        startPosition: ioPosition ? { ...ioPosition } : undefined,
         moved: false
       };
     }
@@ -2243,12 +3181,23 @@
 
   el.svg.addEventListener('pointermove', event => {
     const drag = state.drag;
-    if (!drag || drag.pointerId !== event.pointerId || drag.type !== 'switch') return;
+    if (!drag || drag.pointerId !== event.pointerId ||
+        (drag.type !== 'switch' && drag.type !== 'input' && drag.type !== 'output')) return;
     const point = svgPoint(event);
     const dx = point.x - drag.startPointer.x;
     const dy = point.y - drag.startPointer.y;
     if (!drag.moved && Math.hypot(dx, dy) > 3) drag.moved = true;
     if (!drag.moved) return;
+
+    if (drag.type === 'input' || drag.type === 'output') {
+      const positions = drag.type === 'input' ? state.inputPositions : state.outputPositions;
+      positions[drag.j].x = drag.startPosition.x + dx;
+      state.layout = 'custom';
+      state.collapseSnapshot = null;
+      updateLayoutButtons();
+      render();
+      return;
+    }
 
     const proposed = { x: drag.startPosition.x + dx, y: drag.startPosition.y + dy };
     const mate = drag.j ^ (1 << drag.s);
@@ -2270,6 +3219,7 @@
     state.positions[drag.s][drag.j] = proposed;
     state.collapseSnapshot = null;
     state.layout = 'custom';
+    state.collapsed = collapsedPairCount() > 0;
     render();
   });
 
@@ -2287,13 +3237,72 @@
       } else {
         state.collapseSnapshot = null;
         state.layout = 'custom';
-        render();
+        state.collapsed = collapsedPairCount() > 0;
+        if (!autoAlignStage(drag.s)) {
+          recognizeCurrentLayout();
+          render();
+        }
       }
     } else if (!drag.moved) {
       if (drag.type === 'input') toggleInput(drag.j, true);
       else if (drag.type === 'box') togglePair(drag.s, drag.q, true);
+    } else if (drag.type === 'input' || drag.type === 'output') {
+      state.layout = 'custom';
+      if (!autoAlignBoundary(drag.type)) {
+        recognizeCurrentLayout();
+        render();
+      }
     }
   }
+
+  function installShuffleInteractionHandlers(root) {
+    root.addEventListener('click', event => {
+      if (event.target.closest && event.target.closest('.shuffle-inline-input')) return;
+      const control = event.target.closest && event.target.closest('[data-shuffle-action]');
+      if (!control) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const key = control.dataset.shuffleKey;
+      const action = control.dataset.shuffleAction;
+      if (action === 'shuffle') applyPerfectShuffle(key, 'shuffle');
+      else if (action === 'unshuffle') applyPerfectShuffle(key, 'unshuffle');
+      else if (action === 'set') beginShuffleEdit(key);
+    });
+
+    root.addEventListener('keydown', event => {
+      const input = event.target.closest && event.target.closest('.shuffle-inline-input');
+      if (!input) return;
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        commitShuffleEdit(input, false);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        commitShuffleEdit(input, true);
+      }
+    });
+
+    root.addEventListener('input', event => {
+      const input = event.target.closest && event.target.closest('.shuffle-inline-input');
+      if (!input) return;
+      const editor = state.shuffleEditors.get(String(input.dataset.shuffleEditor));
+      if (!editor) return;
+      editor.value = input.value;
+      editor.invalid = false;
+      input.classList.remove('invalid');
+    });
+
+    root.addEventListener('focusout', event => {
+      const input = event.target.closest && event.target.closest('.shuffle-inline-input');
+      if (!input) return;
+      const key = String(input.dataset.shuffleEditor);
+      queueMicrotask(() => {
+        if (state.shuffleEditors.has(key)) commitShuffleEdit(input, false);
+      });
+    });
+  }
+
+  installShuffleInteractionHandlers(el.svg);
+  installShuffleInteractionHandlers(el.motionOverlay);
 
   el.svg.addEventListener('pointerup', event => finishPointer(event, false));
   el.svg.addEventListener('pointercancel', event => finishPointer(event, true));
@@ -2314,7 +3323,9 @@
   });
 
   el.nSelect.addEventListener('change', () => resetNetwork(Number(el.nSelect.value)));
-  el.generalizedShuffle.addEventListener('change', render);
+  el.generalizedShuffle.addEventListener('change', () => { updateOptionAvailability(); render(); });
+  el.moveOnArcs.addEventListener('change', updateOptionAvailability);
+  el.autoAlign.addEventListener('change', () => { if (el.autoAlign.checked) autoAlignAll(); else updateOptionAvailability(); });
 
   el.stageSpacing.addEventListener('input', () => {
     applyStageSpacing(el.stageSpacing.value);
@@ -2335,6 +3346,7 @@
   el.omega.addEventListener('click', () => startLayout('omega'));
   el.rnetwork.addEventListener('click', () => startLayout('rnetwork'));
   el.collapsePairs.addEventListener('click', toggleCollapsePairs);
+  el.reverseAll.addEventListener('click', reverseAllShuffles);
   el.auto.addEventListener('change', () => setAutoConfig(el.auto.checked));
   el.inputsAll1.addEventListener('click', () => setInputPattern('all1'));
   el.inputsAll0.addEventListener('click', () => setInputPattern('all0'));
@@ -2348,9 +3360,15 @@
   el.customLabels.addEventListener('keydown', event => {
     if (event.key === 'Enter') applyLabels();
   });
-  el.boxes.addEventListener('change', () => startBoxAnimation(el.boxes.checked ? 1 : 0));
+  el.boxes.addEventListener('change', () => {
+    updateOptionAvailability();
+    startBoxAnimation(el.boxes.checked ? 1 : 0);
+  });
   for (const checkbox of [el.upper, el.lower, el.walls, el.stars, el.checks, el.switchLabels, el.shades, el.pairArcs]) {
-    checkbox.addEventListener('change', () => render());
+    checkbox.addEventListener('change', () => {
+      updateOptionAvailability();
+      render();
+    });
   }
 
   window.__reverseNetworkWidget = {
@@ -2361,7 +3379,9 @@
         speed: state.speed,
         stageSpacing: state.stageSpacing,
         layout: state.layout,
+        collapsed: state.collapsed,
         movingTo: state.motion?.targetLayout ?? null,
+        activeShuffleMotions: [...state.shuffleMotions.keys()],
         boxProgress: state.boxProgress,
         auto: { enabled: state.auto.enabled, reverts: Array.from(state.auto.reverts.entries()) },
         inputs: state.inputs.map(x => ({ ...x })),
