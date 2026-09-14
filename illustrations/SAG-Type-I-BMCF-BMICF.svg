@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="545" viewBox="0 0 720 545" role="img" aria-labelledby="title desc">
+  <title id="title">Type I SAG (BMCF/BMICF) - The Centrifuge</title>
+  <desc id="desc">A flattened input path separates sheep and goats into their respective parking areas along smooth, rounded turns.</desc>
+  <defs>
+    <style>
+      .line { fill: none; stroke: #111; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .fine-line { fill: none; stroke: #111; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+      .label, .small-label, .token, .route-token, .panel-number, .caption { fill: #111; font-family: "DejaVu Serif", "Liberation Serif", serif; }
+      .label { font-size: 24px; font-style: normal; }
+      .small-label { font-size: 20px; font-style: normal; }
+      .token { font-size: 27px; font-style: italic; text-anchor: middle; }
+      .route-token { font-size: 22px; font-style: italic; text-anchor: middle; }
+      .panel-number { font-size: 28px; font-style: normal; text-anchor: middle; }
+      .caption { font-size: 25px; font-style: normal; text-anchor: end; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0 L11 6 L0 12 Z" fill="#111"/>
+    </marker>
+  </defs>
+  <rect width="720" height="545" fill="#fff"/>
+  <g transform="translate(10 10)">
+    <circle cx="48" cy="48" r="30" fill="none" stroke="#111" stroke-width="2.4"/>
+    <text class="panel-number" x="48" y="58.2">I</text>
+
+    <text class="small-label" x="200" y="64" text-anchor="middle">Goat-only</text>
+    <text class="small-label" x="200" y="88" text-anchor="middle">parking</text>
+    <path class="fine-line" fill="none" d="M110 137 C110 124 118 119 132 119 H176 C190 119 196 110 200 101 C204 110 210 119 224 119 H268 C282 119 290 124 290 137"/>
+    <text class="small-label" x="460" y="64" text-anchor="middle">Sheep-only</text>
+    <text class="small-label" x="460" y="88" text-anchor="middle">parking</text>
+    <path class="fine-line" fill="none" d="M310 137 C310 124 318 119 332 119 H436 C450 119 456 110 460 101 C464 110 470 119 484 119 H588 C602 119 610 124 610 137"/>
+
+    <path class="line" fill="none" d="M110 151 H290 M310 151 H610"/>
+    <path class="fine-line" fill="none" d="M110 151 V207 M170 151 V207 M230 151 V207 M290 151 V207"/>
+    <path class="fine-line" fill="none" d="M310 151 V207 M370 151 V207 M430 151 V207 M490 151 V207 M550 151 V207 M610 151 V207"/>
+    <text class="label" x="54" y="176" text-anchor="middle">MSB</text>
+    <text class="label" x="654" y="176" text-anchor="middle">LSB</text>
+
+    <text class="token" x="140" y="193">G₃</text>
+    <text class="token" x="200" y="193">G₂</text>
+    <text class="token" x="260" y="193">G₁</text>
+    <text class="token" x="340" y="193">S₅</text>
+    <text class="token" x="400" y="193">S₄</text>
+    <text class="token" x="460" y="193">S₃</text>
+    <text class="token" x="520" y="193">S₂</text>
+    <text class="token" x="580" y="193">S₁</text>
+
+    <path d="M282 229 L271 223 L271 235 Z" fill="#111"/>
+    <path d="M602 229 L591 223 L591 235 Z" fill="#111"/>
+
+    <!-- Curvature-continuous sheep route through the marked bend and into the R=35 fillet. -->
+    <path class="line" fill="none" d="M300 431 C356.429 371.276 357.857 342.819 350 321 C342.143 299.181 325 284 325 264 A35 35 0 0 1 360 229 H602"/>
+    <text class="route-token" x="340" y="411">S₅</text>
+    <text class="route-token" x="365" y="379">S₄</text>
+    <text class="route-token" x="378" y="344">S₃</text>
+    <text class="route-token" x="374" y="309">S₂</text>
+    <text class="route-token" x="359" y="274">S₁</text>
+
+    <!-- C2-smooth S-shaped goat bridge matching the R=23 and R=35 turns. -->
+    <path class="line" fill="none" d="M300 431 A23 23 0 0 0 298.1 397.6 C290.449 391.161 223.889 343.662 187.512 320.884 C151.136 298.107 144.943 300.051 135.8 296 A35 35 0 0 1 150 229 H282"/>
+    <!-- Optically centered at 38-unit spacing in the three sketched target circles. -->
+    <text class="route-token" x="206.2" y="364.9">G₃</text>
+    <text class="route-token" x="173.9" y="344.9">G₂</text>
+    <text class="route-token" x="140.4" y="327.1">G₁</text>
+
+    <!-- Measured from the sketch: shallow sag, then a broad rise into the fork. -->
+    <path class="line" fill="none" d="M10 471 C75 488 150 503 210 478 C250 461.3 286.3 445.5 300 431"/>
+    <text class="route-token" x="23" y="505">S₅</text>
+    <text class="route-token" x="61" y="513">G₃</text>
+    <text class="route-token" x="101" y="519">S₄</text>
+    <text class="route-token" x="142" y="521">S₃</text>
+    <text class="route-token" x="184" y="517">S₂</text>
+    <text class="route-token" x="225" y="504">G₂</text>
+    <text class="route-token" x="261" y="488">G₁</text>
+    <text class="route-token" x="297" y="469">S₁</text>
+
+    <circle cx="342" cy="442" r="9" fill="none" stroke="#111" stroke-width="2.4"/>
+    <path class="fine-line" fill="none" d="M342 451 V482 M328 463 H356 M342 482 L328 505 M342 482 L358 505"/>
+
+    <text class="caption" x="690" y="447">Type I SAG</text>
+    <text class="caption" x="690" y="479">&#8203;&quot;centrifuge&quot; (BMCF)&#8203;</text>
+    <text class="caption" x="690" y="511">&#8203;&quot;inverse-cfuge&quot; (BMICF)&#8203;</text>
+  </g>
+</svg>
