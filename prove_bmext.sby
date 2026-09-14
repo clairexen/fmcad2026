@@ -10,9 +10,9 @@ smtbmc boolector
 [script]
 read -noverific
 read -formal bmext.v
-read -vlog95 bmwaw.v
+read -vlog95 bmgf.v
 prep -top bmext
 
 [files]
 bmext.v
-bmwaw.v
+bmgf.v

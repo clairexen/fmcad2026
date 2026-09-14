@@ -109,32 +109,32 @@ instruction with this semantic.
 
 | Operation | Reverse-OP | Unselected Bits |
 |:---------:|:----------:|:----------------|
-| BMSAG     | BMGAS      | Order preserved |
-| BMWAW     | BMAWW      | Order reversed  |
+| BMCF     | BMICF      | Order preserved |
+| BMGF     | BMSF      | Order reversed  |
 | BMEXT     | BMDEP      | Cleared         |
 
-I've provided Verilog reference implementations for BMWAW and BMAWW in
+I've provided Verilog reference implementations for BMGF and BMSF in
 the GitHub repository for this Key-Note presentation:
 
-- https://github.com/clairexen/fmcad2026/blob/main/bmwaw.v
-- https://github.com/clairexen/fmcad2026/blob/main/bmaww.v
+- https://github.com/clairexen/fmcad2026/blob/main/bmgf.v
+- https://github.com/clairexen/fmcad2026/blob/main/bmsf.v
 
 The same directory (https://github.com/clairexen/fmcad2026/) also contains
 simple reference implementations for the other four instructions BMEXT,
-BMDEP, BMSAG, and BMGAS based on BMWAW and BMAWW using the following equivalences:
+BMDEP, BMCF, and BMICF based on BMGF and BMSF using the following equivalences:
 
-	BMEXT(din, cin) := BMWAW(din & cin, cin)
-	BMDEP(din, cin) := BMAWW(din & cout, cin)         [with cout := BMAWW(cin, cin)]
-	BMSAG(din, cin) := BMWAW(BMWAW(din, cin), cout)   [with cout := BMWAW(cin, cin)]
-	BMGAS(din, cin) := BMAWW(BMAWW(din, cout), cin)   [with cout := BMAWW(cin, cin)]
+	BMEXT(din, cin) := BMGF(din & cin, cin)
+	BMDEP(din, cin) := BMSF(din & cout, cin)         [with cout := BMSF(cin, cin)]
+	BMCF(din, cin) := BMGF(BMGF(din, cin), cout)   [with cout := BMGF(cin, cin)]
+	BMICF(din, cin) := BMSF(BMSF(din, cout), cin)   [with cout := BMSF(cin, cin)]
 
-Note that `cout = BMWAW(cin, cin) = BMAWW(cin, cin)` and that the Verilog
-reference implementations of BMDEP, BMSAG, and BMGAS do not contain an
-additional instantiation of BMWAW / BMAWW to generate cout because we can
-simply use the `.cout()` output of any BMWAW / BMAWW instance that is
+Note that `cout = BMGF(cin, cin) = BMSF(cin, cin)` and that the Verilog
+reference implementations of BMDEP, BMCF, and BMICF do not contain an
+additional instantiation of BMGF / BMSF to generate cout because we can
+simply use the `.cout()` output of any BMGF / BMSF instance that is
 instantiated with `cin` routed to its `.cin()` input port. We even can route
-cout anti-parallel to the data-bus, as can be seen in the BMGAS reference
-implementation, because the `.cout()` output of the BMAWW module does only
+cout anti-parallel to the data-bus, as can be seen in the BMICF reference
+implementation, because the `.cout()` output of the BMSF module does only
 depend on `.cin()` and not `.din()`.
 
 The six Verilog modules also contain formal safety properties for the expected
@@ -146,7 +146,7 @@ Prior art and a peculiar patent
 
 ...
 
-Implementing BMWAW / BMAWW using a reverse omega network
+Implementing BMGF / BMSF using a reverse omega network
 --------------------------------------------------------
 
 Let's start with some definitions:

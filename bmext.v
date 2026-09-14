@@ -18,7 +18,7 @@ module bmext #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
 ) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout, cout);
-	bmwaw #(XLOG2, XLEN) impl (din & cin, cin, dout, cout);
+	bmgf #(XLOG2, XLEN) impl (din & cin, cin, dout, cout);
 
 `ifdef FORMAL
 	integer k, cnt1, cnt0;

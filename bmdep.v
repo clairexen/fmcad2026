@@ -14,11 +14,11 @@
 //  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-module bmgas #(
+module bmicf #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
 ) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout, cout);
-	bmaww #(XLOG2, XLEN) impl (din & cout, cin, dout, cout);
+	bmsf #(XLOG2, XLEN) impl (din & cout, cin, dout, cout);
 
 `ifdef FORMAL
 	integer k, cnt1, cnt0;

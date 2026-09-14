@@ -1,7 +1,7 @@
 [options]
 mode bmc
 depth 1
-# wait on
+wait on
 
 [engines]
 smtbmc yices
@@ -9,10 +9,8 @@ smtbmc boolector
 
 [script]
 read -noverific
-read -formal bmsag.v
-read -vlog95 bmwaw.v
-prep -top bmsag
+read -formal bmsf.v
+prep -top bmsf
 
 [files]
-bmsag.v
-bmwaw.v
+bmsf.v

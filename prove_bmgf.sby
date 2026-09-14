@@ -9,8 +9,8 @@ smtbmc boolector
 
 [script]
 read -noverific
-read -formal bmaww.v
-prep -top bmaww
+read -formal bmgf.v
+prep -top bmgf
 
 [files]
-bmaww.v
+bmgf.v

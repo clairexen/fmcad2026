@@ -1,4 +1,4 @@
-//  Reference implementation for the "inverse sheep and goats" (BMGAS) operation
+//  Reference implementation for the "bitmask centrifuge" (BMCF) operation
 //
 //  Copyright (C) 2026  Claire Xenia Wolf <claire@clairexen.net>
 //
@@ -14,13 +14,13 @@
 //  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-module bmgas #(
+module bmcf #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
 ) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout, cout);
-	wire [XLEN-1:0] dt, ct; // note that ct is wired anti-parallel to dt
-	bmaww #(XLOG2, XLEN) pass_1 (din, ct, dt, cout);
-	bmaww #(XLOG2, XLEN) pass_2 (dt, cin, dout, ct);
+	wire [XLEN-1:0] dt, ct;
+	bmgf #(XLOG2, XLEN) pass_1 (din, cin, dt, ct);
+	bmgf #(XLOG2, XLEN) pass_2 (dt, ct, dout, cout);
 
 `ifdef FORMAL
 	integer k, cnt1, cnt0;
@@ -29,11 +29,11 @@ module bmgas #(
 		cnt0 = 0;
 		for (k = 0; k < XLEN; k = k + 1) begin
 			if (cin[k] == 1'b1) begin
-				assert (din[cnt1] == dout[k]);
+				assert (dout[cnt1] == din[k]);
 				cnt1 = cnt1 + 1;
 			end
 			if (cin[XLEN-k-1] == 1'b0) begin
-				assert (din[XLEN-cnt0-1] == dout[XLEN-k-1]);
+				assert (dout[XLEN-cnt0-1] == din[XLEN-k-1]);
 				cnt0 = cnt0 + 1;
 			end
 		end

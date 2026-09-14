@@ -51,7 +51,7 @@ module hilewitz_decoder #(
 	endgenerate
 endmodule
 
-// the control generator from bmwaw.v
+// the control generator from bmgf.v
 module clairexen_decoder #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
