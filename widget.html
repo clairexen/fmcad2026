@@ -496,6 +496,7 @@
     <label><input id="showChecks" type="checkbox"> Checkmarks</label>
     <label><input id="showSwitchLabels" type="checkbox"> Switch-output labels</label>
     <label><input id="showSignalShades" type="checkbox"> Signal shades</label>
+    <label><input id="showSilverGreen" type="checkbox"> Silver+Green</label>
     <label><input id="showPairArcs" type="checkbox"> Paired-switch arcs</label>
     <label><input id="moveOnArcs" type="checkbox"> Move on arcs</label>
     <label><input id="autoAlign" type="checkbox"> Auto-align</label>
@@ -604,6 +605,7 @@
     checks: document.getElementById('showChecks'),
     switchLabels: document.getElementById('showSwitchLabels'),
     shades: document.getElementById('showSignalShades'),
+    silverGreen: document.getElementById('showSilverGreen'),
     pairArcs: document.getElementById('showPairArcs'),
     moveOnArcs: document.getElementById('moveOnArcs'),
     autoAlign: document.getElementById('autoAlign'),
@@ -681,12 +683,41 @@
     return t < 0.5 ? mixHex('#000000', base, 0.55 + 0.90 * t) : mixHex(base, '#ffffff', 0.90 * (t - 0.5));
   }
 
+  function signalDirectionClass(signal) {
+    if (!el.silverGreen || !el.silverGreen.checked) return null;
+    if (!state.layers || !state.layers[state.n]) return null;
+
+    const finalLayer = state.layers[state.n];
+    let out = -1;
+    for (let j = 0; j < state.N; j++) {
+      if (finalLayer[j].origin === signal.origin) {
+        out = j;
+        break;
+      }
+    }
+    if (out < 0) return null;
+
+    // Compare logical positions. The output row's half-step visual offset is a
+    // mini-diagram convention; the main diagram uses its ordinary positions.
+    const goingLeft = out < signal.origin;
+
+    if (signal.value === 1 && goingLeft) return 'green';
+    if (signal.value === 0 && !goingLeft) return 'silver';
+    return null;
+  }
+
   function signalCoreColor(signal) {
+    const directional = signalDirectionClass(signal);
+    if (directional === 'green') return '#278a57';
+    if (directional === 'silver') return '#727b89';
     const base = signal.value === 2 ? '#727b89' : (signal.value === 1 ? '#236f9d' : '#9a4a22');
     return shadeBase(base, signal);
   }
 
   function signalGlowColor(signal) {
+    const directional = signalDirectionClass(signal);
+    if (directional === 'green') return '#8fd5ad';
+    if (directional === 'silver') return '#c8ced8';
     const base = signal.value === 2 ? '#c8ced8' : (signal.value === 1 ? '#87d7ff' : '#ffc75e');
     return shadeBase(base, signal);
   }
@@ -1967,7 +1998,7 @@
       const value = signal.value;
       const d = value === 1 ? `M${fmt(a.x)},${fmt(a.y)}L${fmt(b.x)},${fmt(b.y)}` : wavyD([a, b], amplitude, wavelength);
       if (!d) return;
-      if (el.shades.checked) shadedParts[signal.origin].push(d);
+      if (el.shades.checked || el.silverGreen.checked) shadedParts[signal.origin].push(d);
       else (value === 2 ? activeTriParts : (value === 1 ? activeOneParts : activeZeroParts)).push(d);
     };
     const addInactive = (a, b) => {
@@ -2674,7 +2705,7 @@
     const fontSize = clamp(g.dx * 0.25, 6.5, 11.5);
     const bitSize = clamp(g.dx * 0.16, 5.5, 8.2);
     const value = signal.value;
-    const tri = value === 2;
+    const tri = value === 2; // sparkle remains reserved exclusively for the X state
     const glowStroke = signalGlowColor(signal);
     const coreStroke = signalCoreColor(signal);
     const fill = tri ? '#f4f5f7' : (value ? '#f1fbff' : '#fff8e8');
@@ -2856,7 +2887,7 @@
       el.svg.setAttribute('viewBox', `0 ${-topPad} ${g.W} ${g.H + topPad}`);
     }
     el.svg.dataset.n = String(state.N);
-    const shadedGlowMarkup = el.shades.checked ? shadedD.map((d, origin) => {
+    const shadedGlowMarkup = (el.shades.checked || el.silverGreen.checked) ? shadedD.map((d, origin) => {
       if (!d) return '';
       const sig = state.inputs[origin];
       const width = sig.value === 2 ? 8.5 : (sig.value === 1 ? 6.2 : 6.5);
@@ -2864,7 +2895,7 @@
       const filter = sig.value === 2 ? ' filter=\"url(#sparkleGlow)\"' : '';
       return `<path d=\"${d}\" stroke=\"${signalGlowColor(sig)}\" stroke-width=\"${width}\" opacity=\"${opacity}\"${filter}/>`;
     }).join('') : '';
-    const shadedCoreMarkup = el.shades.checked ? shadedD.map((d, origin) => d ? `<path d=\"${d}\" stroke=\"${signalCoreColor(state.inputs[origin])}\" stroke-width=\"1.65\"/>` : '').join('') : '';
+    const shadedCoreMarkup = (el.shades.checked || el.silverGreen.checked) ? shadedD.map((d, origin) => d ? `<path d=\"${d}\" stroke=\"${signalCoreColor(state.inputs[origin])}\" stroke-width=\"1.65\"/>` : '').join('') : '';
     el.svg.innerHTML = defs +
       `<g id="guides">${renderGuides(g)}</g>` +
       `<g id="boxBacks">${boxBack}</g>` +
@@ -2873,13 +2904,13 @@
       `<g id="switchBacks">${switchBack}</g>` +
       `<g id="inactiveRoutes"><path d="${inactiveD}" fill="none" stroke="#8c96a8" stroke-width="1.35" stroke-dasharray="2.6 4.2" stroke-linecap="round" stroke-linejoin="round"/></g>` +
       `<g id="signalGlows" fill="none" stroke-linecap="round" stroke-linejoin="round">` +
-        (el.shades.checked ? shadedGlowMarkup :
+        ((el.shades.checked || el.silverGreen.checked) ? shadedGlowMarkup :
           `<path d="${oneD}" stroke="#87d7ff" stroke-width="6.2" opacity="0.42"/>` +
           `<path d="${zeroD}" stroke="#ffc75e" stroke-width="6.5" opacity="0.48"/>` +
           `<path d="${triD}" stroke="#c8ced8" stroke-width="8.5" opacity="0.62" filter="url(#sparkleGlow)"/>`) +
       `</g>` +
       `<g id="signalCores" fill="none" stroke-linecap="round" stroke-linejoin="round">` +
-        (el.shades.checked ? shadedCoreMarkup :
+        ((el.shades.checked || el.silverGreen.checked) ? shadedCoreMarkup :
           `<path d="${oneD}" stroke="#236f9d" stroke-width="1.65"/>` +
           `<path d="${zeroD}" stroke="#9a4a22" stroke-width="1.65"/>` +
           `<path d="${triD}" stroke="#727b89" stroke-width="1.65"/>`) +
@@ -3005,7 +3036,7 @@
     const addActive = (a, b, signal) => {
       if (dist(a, b) < 0.05) return;
       const value = signal.value;
-      const path = el.shades.checked ? shaded[signal.origin] : (value === 2 ? tri : (value === 1 ? one : zero));
+      const path = (el.shades.checked || el.silverGreen.checked) ? shaded[signal.origin] : (value === 2 ? tri : (value === 1 ? one : zero));
       if (value === 1) { path.moveTo(a.x, a.y); path.lineTo(b.x, b.y); }
       else addCanvasWavy(path, a, b, amplitude, wavelength);
     };
@@ -3071,7 +3102,7 @@
     ctx.lineCap='round'; ctx.lineJoin='round';
     ctx.setLineDash([2.6,4.2]); ctx.strokeStyle='#8c96a8'; ctx.lineWidth=1.35; ctx.globalAlpha=1; ctx.stroke(paths.inactive);
     ctx.setLineDash([]);
-    if (el.shades.checked) {
+    if (el.shades.checked || el.silverGreen.checked) {
       for (let origin=0; origin<state.N; origin++) {
         const sig=state.inputs[origin], path=paths.shaded[origin];
         ctx.globalAlpha=sig.value===2?0.62:(sig.value===1?0.42:0.48);
@@ -3203,6 +3234,7 @@
     // These options always have an effect in every settled layout.
     setCheckboxAvailability(el.switchLabels, true);
     setCheckboxAvailability(el.shades, true);
+    setCheckboxAvailability(el.silverGreen, true);
     setCheckboxAvailability(el.generalizedShuffle, true);
     setCheckboxAvailability(el.moveOnArcs, true);
     setCheckboxAvailability(el.autoAlign, true);
@@ -3810,7 +3842,7 @@
     updateOptionAvailability();
     startBoxAnimation(el.boxes.checked ? 1 : 0);
   });
-  for (const checkbox of [el.upper, el.lower, el.walls, el.stars, el.checks, el.switchLabels, el.shades, el.pairArcs]) {
+  for (const checkbox of [el.upper, el.lower, el.walls, el.stars, el.checks, el.switchLabels, el.shades, el.silverGreen, el.pairArcs]) {
     checkbox.addEventListener('change', () => {
       updateOptionAvailability();
       render();
