@@ -3272,15 +3272,17 @@
     const outByOrigin = Array(N);
     for (let out = 0; out < N; out++) outByOrigin[finalLayer[out].origin] = out;
 
-    // Determine enough vertical room for the largest fixed-30° diagonal.
+    // Size the miniature from the longest possible fixed-30° diagonal.
+    // About 1.5× that rise is sufficient for the two mirrored routing zones,
+    // plus the endpoint boxes/stubs and a small margin.
     let maxDx = 0;
     for (let origin = 0; origin < N; origin++) {
       maxDx = Math.max(maxDx, Math.abs(outputX(outByOrigin[origin]) - inputX(origin)));
     }
     const diagonalRise = maxDx * tan30;
     const topY = 13;
-    const routeGap = Math.max(28, diagonalRise + 12);
-    const bottomY = topY + boxH + stub * 2 + routeGap * 2 + 18;
+    const routingHeight = Math.max(34, diagonalRise * 1.5);
+    const bottomY = topY + boxH + stub * 2 + routingHeight;
     const midY = (topY + bottomY) / 2;
     const width = marginX * 2 + (N - 0.5) * pitch;
     const height = bottomY + 15;
