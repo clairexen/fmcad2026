@@ -27,10 +27,10 @@ bit-permutation operation does, but also how that can be achieved in an
 efficient manner using a Reverse Omega Network.
 
 This author discovered the method independently but the method is not novel. In
-fact, the US patent [US9134953], originally filed in 2008 and due to expire in
-November 2028, seems to claim this invention. And it is in big part because of
-this patent that there's no instruction implementing any of the "sheep and
-goats" family of functions in open ISAs and processors yet.
+fact, the US patents [US8285766] and [US9134953], originally filed in 2008 and
+due to expire in November 2028, seem to claim this invention. And it is in big
+part because of this patent that there's no instruction implementing any of the
+"sheep and goats" family of functions in open ISAs and processors yet.
 
 However, the 1994 paper [narasimha1994] describes this exact circuit and
 deriving this exact circuit should be rather straigth-forward for anyone
@@ -165,4 +165,5 @@ References
 - [parker1980] D. S. Parker, “Notes on Shuffle/Exchange-Type Switching Networks,” IEEE Transactions on Computers, C-29(3), 213–222, 1980: https://doi.org/10.1109/TC.1980.1675553.
 - [lawrie1975] D. H. Lawrie, “Access and Alignment of Data in an Array Processor,” IEEE Transactions on Computers, C-24(12), 1145–1155, 1975: https://doi.org/10.1109/T-C.1975.224157.
 - [hilewitz2006] Y. Hilewitz and R. B. Lee, “Fast Bit Compression and Expansion with Parallel Extract and Parallel Deposit Instructions,” in IEEE 17th International Conference on Application-specific Systems, Architectures and Processors (ASAP’06), IEEE, Sep. 2006: https://doi.org/10.1109/ASAP.2006.33.
-- [US9134953] R. B. Lee and Y. Hilewitz, “Microprocessor shifter circuits utilizing butterfly and inverse butterfly routing circuits, and control circuits therefor,” U.S. Patent 9 134 953 B2, Sep. 15, 2015: https://patents.google.com/patent/US9134953B2/en
+- [US9134953] R. B. Lee and Y. Hilewitz, “Microprocessor shifter circuits utilizing butterfly and inverse butterfly routing circuits, and control circuits therefor,” U.S. Patent 9 134 953 B2, Sep. 15, 2015: https://patents.google.com/patent/US9134953B2
+- [US8285766] R. B. Lee and Y. Hilewitz, “Microprocessor shifter circuits utilizing butterfly and inverse butterfly routing circuits, and control circuits therefor,” U.S. Patent 8 285 766 B2, Oct. 9, 2012: https://patents.google.com/patent/US8285766B2
