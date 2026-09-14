@@ -32,12 +32,12 @@ due to expire in November 2028, seem to claim this invention. And it is in big
 part because of this patent that there's no instruction implementing any of the
 "sheep and goats" family of functions in open ISAs and processors yet.
 
-However, the 1994 paper [narasimha1994] describes this exact circuit and
-deriving this exact circuit should be rather straigth-forward for anyone
-familiar with banyan networks and other self-routing switching networks.
+However, the 1994 paper [narasimha1994] describes this authors exact circuit
+and deriving this exact circuit should be rather straigth-forward for anyone
+familiar with banyan networks and self-routing switching networks in general.
 
-A family of three functions (and their respective inverse)
-----------------------------------------------------------
+A family of three "Sheep and Goats" functions (and their respective inverse)
+----------------------------------------------------------------------------
 
 Ignoring symmetries there are three reasonable mental pictures for translating
 the language of The Parable of the Sheep and the Goats to a bit permutation
@@ -59,6 +59,8 @@ the left by the number of sheep. This operation is most commonly referred to
 as "sheep and goats" (SAG). Knuth calls this instruction "sheep and goats". But
 it is also often referred to as "centrifuge". The Power 10 ISA contains an
 instruction named cfuged ("Centrifuge Doubleword") with this exact semantic.
+Going forward I'm calling this instruction "Bit-Mask-Centrifuge" or
+"Bit-Magic-Centrifuge" (BMCF) and its inverse "inverse centrifuge" (BMICF).
 
 In the second mental picture both the goats and the sheep approach their
 respective output areas from the mid-point between the areas. Then the sheep
@@ -68,10 +70,11 @@ now end up in the very left spot (MSB of the output). In this picture the sheep
 and goat behaviors are mirror images of each other, and thus the sheep will
 be sorted stably to the right while the order of the goats with respect to
 MSB/LSB of the input and output words is being reversed. This operation is
-most commonly referred to as "sheep and goats with reversed goat order", but
-I am going to refer to it as the "witches and wizards" (WAW) operation from
-now on. However, Knuth calls this instruction "gather-flip" and I have seen
-the term "scatter-flip" being used for the inverse operation.
+oiften referred to as "sheep and goats with reversed goat order", However,
+Knuth calls this instruction "gather-flip" and I have seen the term
+"scatter-flip" being used for the inverse operation. Thus I'm going to use
+the instruction names "gather-flip" (BMGF) and "scatter-flip" (BMSF) going
+forward.
 
 In the third mental picture we simply throw the goat bits away and replace them
 with zeros in the output word. This is the semantic of the X86 / X86\_64
@@ -97,17 +100,12 @@ their original positions, when executed with a PEXT result and the control word
 that created it, ignoring additional "goat" bits in the input and setting
 "goat" positions in the output word to zero.
 
-We also consider the "inverse sheep and goats" (GAS) and "inverse witches and
-wizards" (AWW) operations. (The meaning behind the memnonic AWW will become
-clear at the end of the discussion of the AWA operation below.)
-
 I personally consider the use of the the word "parallel" (and prefix letter P)
 in the X86 PEXT and PDEP instruction memnonics a prime example of bad ISA
 design, because the memnonic for an instruction should focus on the instruction
-semantic, not performance. Following the direction of my work for the RISC-V
-Bitmanip Taks Group I therefore use the prefix BM (for Bit-Mask, ... or maybe
-Bit-Magic?) instead, yielding the following 6 instructions with the semantics
-as described above:
+semantic, not performance or style of implementation. Going forward I'm thus
+using the terms and names "extract" (BMEXT) and "deposit" (BMDEP) for an
+instruction with this semantic.
 
 | Operation | Reverse-OP | Unselected Bits |
 |:---------:|:----------:|:----------------|
