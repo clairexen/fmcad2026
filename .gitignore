@@ -5,4 +5,5 @@
 /prove_bmext/
 /prove_bmdep/
 /prove_hilewitz/
-*.swp
+/tmp/
+.*.swp
