@@ -27,14 +27,15 @@ bit-permutation operation does, but also how that can be achieved in an
 efficient manner using a Reverse Omega Network.
 
 This author discovered the method independently but the method is not novel. In
-fact, the US patents [US8285766] and [US9134953], originally filed in 2008 and
-due to expire in November 2028, seem to claim this invention. And it is in big
-part because of this patent that there's no instruction implementing any of the
-"sheep and goats" family of functions in open ISAs and processors yet.
+fact, the 1994 paper [narasimha1994] describes this authors exact circuit and
+in my view deriving this exact circuit should be rather straigth-forward for
+anyone familiar with banyan networks and self-routing switching networks in
+general.
 
-However, the 1994 paper [narasimha1994] describes this authors exact circuit
-and deriving this exact circuit should be rather straigth-forward for anyone
-familiar with banyan networks and self-routing switching networks in general.
+However, the US patents [US8285766] and [US9134953], originally filed in 2008
+and due to expire in November 2028, seem to claim this invention. And it is in
+big part because of this patent that there's no instruction implementing any of
+the "sheep and goats" family of functions in open ISAs and processors yet.
 
 A family of three "Sheep and Goats" functions (and their respective inverse)
 ----------------------------------------------------------------------------
@@ -49,36 +50,35 @@ to right until each bit has reached its final position, with the LSB sheep
 ending up in the most right (LSB) position of the output word. The behavior of
 the "goat" bits however is different in the three mental pictures.
 
-In the first mental picture the goats approach the left area from the left,
+**(I)** In the first mental picture the goats approach the left area from the left,
 then turn right onto the left area, and then traverse the left area from left
 to right until each bit has reached its final position, with LSB goat ending up
 in the most right position of the left area, and the MSB goat ending up in the
 most left position in the left area, the MSB position of the output word. In
 this mental picture the goats behave exactly like the sheep, only shifted to
-the left by the number of sheep. This operation is most commonly referred to
-as "sheep and goats" (SAG). Knuth calls this instruction "sheep and goats". But
-it is also often referred to as "centrifuge". The Power 10 ISA contains an
+the left by the number of sheep. This operation is most commonly referred to as
+"sheep and goats" (SAG). Knuth calls this instruction "sheep and goats". But it
+is also often referred to as "centrifuge". The Power 10 ISA contains an
 instruction named cfuged ("Centrifuge Doubleword") with this exact semantic.
 Going forward I'm calling this instruction "Bit-Mask-Centrifuge" or
 "Bit-Magic-Centrifuge" (BMCF) and its inverse "inverse centrifuge" (BMIC).
 
-In the second mental picture both the goats and the sheep approach their
-respective output areas from the mid-point between the areas. Then the sheep
-turn right onto their area and the goats turn left onto their area. The goats
-now traverse the left area from right to left and the first (LSB) goat will
-now end up in the very left spot (MSB of the output). In this picture the sheep
-and goat behaviors are mirror images of each other, and thus the sheep will
-be sorted stably to the right while the order of the goats with respect to
+**(II)** In the second mental picture both the goats and the sheep approach
+their respective output areas from the mid-point between the areas. Then the
+sheep turn right onto their area and the goats turn left onto their area. The
+goats now traverse the left area from right to left and the first (LSB) goat
+will now end up in the very left spot (MSB of the output). In this picture the
+sheep and goat behaviors are mirror images of each other, and thus the sheep
+will be sorted stably to the right while the order of the goats with respect to
 MSB/LSB of the input and output words is being reversed. This operation is
 oiften referred to as "sheep and goats with reversed goat order", However,
 Knuth calls this instruction "gather-flip" and I have seen the term
-"scatter-flip" being used for the inverse operation. Thus I'm going to use
-the instruction names "gather-flip" (BMGF) and "scatter-flip" (BMSF) going
-forward.
+"scatter-flip" being used for the inverse operation. Thus I'm going to use the
+instruction names "gather-flip" (BMGF) and "scatter-flip" (BMSF) going forward.
 
-In the third mental picture we simply throw the goat bits away and replace them
-with zeros in the output word. This is the semantic of the X86 / X86\_64
-"parallel extract" (PEXT) instruction. (And Power 10 also has a `pextd`
+**(III)** In the third mental picture we simply throw the goat bits away and
+replace them with zeros in the output word. This is the semantic of the X86 /
+X86\_64 "parallel extract" (PEXT) instruction. (And Power 10 also has a `pextd`
 instruction. And the x86 AVX-512 `VPCOMPRESS*`, Arm SVE `COMPACT`, and RISC-V
 `vcompress.vm` vector instructions gather selected vector elements stably, but
 discard or leave unspecified the complementary elements.) Arguably this third
@@ -90,7 +90,9 @@ from christian scripture:
 > and you gave me nothing to eat, I was thirsty and you gave me nothing to
 > drink, [...]
 
-I have illustrated the three mental pictures in this sketch:
+I have illustrated the three mental pictures in the following sketch. (It
+simply depicts a shepherd who separates the sheep from the goats, so no eternal
+fire is included in this illustration.)
 
 - https://github.com/clairexen/fmcad2026/blob/main/illustrations/All-SAG-Types-Landscape.png
 
