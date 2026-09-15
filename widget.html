@@ -37,6 +37,34 @@
     box-shadow: 0 8px 28px rgb(31 45 70 / 0.10);
     overflow: hidden;
   }
+  .widget {
+    position: relative;
+    min-width: 620px;
+    min-height: 420px;
+    overflow: hidden;
+  }
+  .widget-resize-handle {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    width: 18px;
+    height: 18px;
+    z-index: 20;
+    cursor: nwse-resize;
+    border-radius: 3px 0 0 0;
+    background:
+      linear-gradient(135deg,
+        transparent 0 38%,
+        #8793a5 38% 46%,
+        transparent 46% 56%,
+        #8793a5 56% 64%,
+        transparent 64% 74%,
+        #8793a5 74% 82%,
+        transparent 82%);
+    opacity: .82;
+    touch-action: none;
+  }
+
   .controls {
     display: flex;
     flex-wrap: wrap;
@@ -233,7 +261,7 @@
   .network-sidebar {
     position: absolute;
     top: 74px;
-    right: 8px;
+    right: 0;
     z-index: 6;
     width: 32px;
     height: 148px;
@@ -260,34 +288,32 @@
     position: absolute;
     top: 0;
     right: 0;
+    left: auto;
     width: 32px;
     height: 148px;
     border: 1px solid #aeb8c8;
     border-right: 0;
-    border-radius: 8px 0 0 8px;
+    border-radius: 7px 0 0 7px;
     background: #f3f6fa;
     color: #465267;
     cursor: pointer;
     font: 800 12px/1 system-ui, sans-serif;
     padding: 0;
     pointer-events: auto;
-    box-shadow: 0 2px 8px rgb(31 45 70 / 0.10);
+    box-shadow: 0 2px 8px rgb(31 45 70 / .10);
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
   }
   .network-sidebar.open .network-sidebar-tab {
-    top: 0;
+    left: -32px;
     right: auto;
-    left: 0;
-    width: 32px;
-    height: 100%;
-    min-height: 220px;
-    border: 0;
-    border-right: 1px solid #cbd3df;
+    border: 1px solid #3b7ca8;
+    border-right: 0;
     border-radius: 7px 0 0 7px;
-    box-shadow: none;
+    background: #dff2ff;
+    color: #23485f;
+    box-shadow: inset 0 0 0 1px #8ac9ec, 0 2px 8px rgb(31 45 70 / .08);
   }
   .network-sidebar-tab span {
     display: block;
@@ -298,10 +324,13 @@
   }
   .network-sidebar-content {
     display: none;
-    padding: 12px 14px 14px 44px;
+    margin-right: 0;
+    padding: 12px 14px 14px 14px;
     min-width: 0;
-    max-height: calc(100% - 2px);
+    max-height: calc(100vh - 110px);
     overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
   }
   .network-sidebar.open .network-sidebar-content {
     display: block;
@@ -369,6 +398,14 @@
     pointer-events: none;
   }
   @media (max-width: 760px) {
+    .widget {
+      min-width: 0;
+      min-height: 0;
+      width: 100% !important;
+      height: auto !important;
+      overflow: visible;
+    }
+    .widget-resize-handle { display: none; }
     .network-sidebar {
       top: 66px;
       max-height: calc(100% - 74px);
@@ -377,6 +414,396 @@
       max-height: calc(100% - 74px);
     }
   }
+
+  .network-stage {
+    position: relative;
+    width: 100%;
+  }
+  .network-surfaces {
+    position: relative;
+    width: 100%;
+  }
+  .canvas-tabs {
+    position: absolute;
+    top: 0;
+    left: 5px;
+    z-index: 8;
+    display: flex;
+    gap: 5px;
+    pointer-events: auto;
+  }
+  .canvas-tabs button {
+    min-height: 30px;
+    padding: 5px 10px;
+    border: 1px solid #aeb8c8;
+    border-radius: 7px;
+    background: #f3f6fa;
+    color: #465267;
+    box-shadow: 0 1px 4px rgb(31 45 70 / .08);
+    font-weight: 800;
+    font-size: 12px;
+  }
+  .canvas-tabs button.active {
+    border-color: #3b7ca8;
+    background: #dff2ff;
+    color: #23485f;
+    box-shadow: inset 0 0 0 1px #8ac9ec, 0 1px 4px rgb(31 45 70 / .08);
+  }
+
+  .controls-sidebar {
+    position: absolute;
+    top: 74px;
+    left: 0;
+    z-index: 7;
+    width: min(420px, calc(100% - 16px));
+    max-height: calc(100% - 82px);
+    border: 1px solid #b8c3d1;
+    border-radius: 0 8px 8px 0;
+    background: rgba(246,248,251,.98);
+    box-shadow: 0 2px 10px rgb(31 45 70 / .10);
+    overflow: visible;
+  }
+  .controls-sidebar:not(.open) {
+    width: 32px;
+    height: 148px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    pointer-events: none;
+  }
+  .controls-sidebar-tab {
+    position: absolute;
+    top: 0;
+    right: -32px;
+    left: auto;
+    width: 32px;
+    height: 148px;
+    border: 1px solid #aeb8c8;
+    border-left: 0;
+    border-radius: 0 7px 7px 0;
+    background: #f3f6fa;
+    color: #465267;
+    cursor: pointer;
+    font: 800 12px/1 system-ui, sans-serif;
+    padding: 0;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgb(31 45 70 / .10);
+  }
+  .controls-sidebar:not(.open) .controls-sidebar-tab {
+    left: 0;
+    right: auto;
+    border: 1px solid #aeb8c8;
+    border-left: 0;
+    border-radius: 0 7px 7px 0;
+  }
+  .controls-sidebar.open .controls-sidebar-tab {
+    background: #dff2ff;
+    border-color: #3b7ca8;
+    color: #23485f;
+    box-shadow: inset 0 0 0 1px #8ac9ec, 0 2px 8px rgb(31 45 70 / .08);
+  }
+  .controls-sidebar-tab span {
+    display: block;
+    transform: rotate(90deg);
+    transform-origin: center;
+    white-space: nowrap;
+  }
+  .controls-sidebar:not(.open) .controls-sidebar-tab span {
+    transform: rotate(90deg);
+  }
+  .controls-sidebar-content {
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0;
+    max-height: calc(100vh - 110px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+  .controls-sidebar:not(.open) .controls-sidebar-content {
+    display: none;
+  }
+  .controls-sidebar .controls,
+  .controls-sidebar .checks,
+  .controls-sidebar .input-presets {
+    border-left: 0;
+    border-right: 0;
+  }
+  .controls-sidebar .controls {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .controls-sidebar .control-group {
+    justify-content: flex-start;
+  }
+  .controls-sidebar .checks {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 5px 8px;
+    padding-top: 7px;
+  }
+  .controls-sidebar .checks label {
+    white-space: normal;
+  }
+  .controls-sidebar .input-presets {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+  .controls-sidebar .input-presets button {
+    width: 100%;
+  }
+  .controls-sidebar .input-presets .caption,
+  .controls-sidebar .input-presets .preset-separator {
+    grid-column: 1 / -1;
+  }
+  .controls-sidebar .input-presets .preset-separator {
+    width: 100%;
+    height: 1px;
+    margin: 2px 0;
+  }
+
+  @media (max-width: 760px) {
+    .network-stage {
+      display: flex;
+      flex-direction: column;
+    }
+    .controls-sidebar,
+    .controls-sidebar.open,
+    .controls-sidebar:not(.open) {
+      position: static;
+      order: 0;
+      width: 100% !important;
+      height: auto;
+      max-height: none;
+      overflow: visible;
+      border: 0;
+      border-radius: 0;
+      background: var(--panel);
+      box-shadow: none;
+      pointer-events: auto;
+    }
+    .controls-sidebar-tab {
+      display: none;
+    }
+    .controls-sidebar-content,
+    .controls-sidebar:not(.open) .controls-sidebar-content {
+      display: block;
+      padding: 0;
+      max-height: none;
+      overflow: visible;
+    }
+    .controls-sidebar .controls {
+      grid-template-columns: repeat(2, minmax(0,1fr));
+    }
+    .controls-sidebar .checks {
+      grid-template-columns: repeat(2, minmax(0,1fr));
+    }
+    .network-surfaces {
+      order: 1;
+      position: relative;
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-x: contain;
+    }
+    .canvas-wrap {
+      overflow: visible;
+    }
+    .network-sidebar,
+    .network-sidebar.open {
+      position: static;
+      order: 2;
+      width: 100% !important;
+      height: auto;
+      max-height: none;
+      overflow: visible;
+      border: 0;
+      border-radius: 0;
+      background: #fbfcfe;
+      box-shadow: none;
+      pointer-events: auto;
+    }
+    .network-sidebar-tab {
+      display: none;
+    }
+    .network-sidebar-content,
+    .network-sidebar.open .network-sidebar-content {
+      display: block;
+      padding: 10px 8px 12px;
+      max-height: none;
+      overflow-x: auto;
+    }
+    .canvas-tabs {
+      top: 5px;
+      left: 8px;
+    }
+  }
+
+  .canvas-tabs > button.canvas-tab {
+    appearance: none;
+    min-height: 32px;
+    padding: 5px 12px;
+    border: 1px solid #aeb8c8;
+    border-top: 0;
+    border-radius: 0 0 7px 7px;
+    background: #f3f6fa;
+    color: #465267;
+    box-shadow: 0 2px 8px rgb(31 45 70 / .10);
+    font: 800 12px/1 system-ui, sans-serif;
+  }
+  .canvas-tabs > button.canvas-tab.active {
+    border-color: #3b7ca8;
+    background: #dff2ff;
+    color: #23485f;
+    box-shadow: inset 0 0 0 1px #8ac9ec, 0 2px 8px rgb(31 45 70 / .08);
+  }
+  .canvas-tabs > button.canvas-tab:hover {
+    border-color: #8797aa;
+    background: #eaf0f6;
+  }
+  .canvas-tabs > button.canvas-tab.active:hover {
+    border-color: #3b7ca8;
+    background: #dff2ff;
+  }
+
+  .controls-reset-button { position: sticky; top: 8px; float: right; z-index: 2; margin: 8px 8px 0 0; min-height: 28px; padding: 4px 10px; }
+  .challenge-overlay { position:absolute; top:38px; left:5px; z-index:9; width:max-content; max-width:calc(100% - 8px); max-height:calc(100% - 46px); overflow:auto; display:none; border:1px solid #b8c3d1; border-radius:8px; background:rgba(246,248,251,.98); box-shadow:0 2px 10px rgb(31 45 70 / .12); color:#263246; }
+  .challenge-overlay.open { display:block; }
+  .challenge-overlay.compact { width:max-content; max-width:calc(100% - 8px); }
+  .challenge-topbar { display:flex; align-items:center; gap:10px; width:max-content; min-width:100%; padding:10px 12px; border-bottom:1px solid #d4dbe5; position:sticky; top:0; background:rgba(246,248,251,.98); z-index:2; }
+  .challenge-stop { width:34px; min-width:34px; padding:4px 0; font-size:16px; font-weight:800; }
+  .challenge-play { min-width:92px; font-weight:800; }
+  .challenge-play .media-symbol { font-family:"Segoe UI Symbol","Noto Sans Symbols 2","DejaVu Sans",sans-serif; font-weight:700; }
+  .challenge-score,.challenge-clock { font:800 22px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; letter-spacing:.04em; }
+  .challenge-score::before { content:'Score '; font:700 11px/1 system-ui,sans-serif; letter-spacing:0; color:#677387; margin-right:4px; }
+  .challenge-clock::before { content:'Time '; font:700 11px/1 system-ui,sans-serif; letter-spacing:0; color:#677387; margin-right:4px; }
+  .challenge-settings { padding:12px; display:grid; gap:13px; width:max-content; max-width:100%; }
+  .challenge-overlay.compact .challenge-settings { display:none; }
+  .challenge-group { display:grid; gap:7px; }
+  .challenge-group-title { font-size:12px; font-weight:800; color:#3e4b60; }
+  .challenge-options { display:flex; flex-wrap:wrap; gap:8px 12px; }
+  .challenge-options label { display:inline-flex; align-items:center; gap:5px; font-size:12px; }
+  .challenge-speed { display:grid; grid-template-columns:auto minmax(120px,1fr) auto; align-items:center; gap:8px; }
+  .challenge-tab-active { position:relative; z-index:10; transform:translateY(6px); border:1px solid #3b7ca8!important; border-bottom:0!important; border-radius:7px 7px 0 0!important; background:#dff2ff!important; color:#23485f!important; box-shadow:inset 0 0 0 1px #8ac9ec!important; }
+  .challenge-mode .controls-sidebar,.challenge-mode .network-sidebar { display:none!important; }
+  .challenge-mode:not(.challenge-running) #network,
+  .challenge-mode:not(.challenge-running) #motionGuideCanvas,
+  .challenge-mode:not(.challenge-running) #motionCanvas,
+  .challenge-mode:not(.challenge-running) #motionOverlay { visibility:hidden; }
+
+  .story-overlay { position:absolute; top:38px; left:42px; z-index:5; width:max-content; min-width:420px; max-width:calc(100% - 52px); overflow:auto; border:1px solid #b8c3d1; border-radius:8px; background:rgba(246,248,251,.98); box-shadow:0 2px 10px rgb(31 45 70 / .12); display:none; color:#263246; }
+  .story-overlay.open { display:block; }
+  .story-overlay-inner { display:grid; gap:10px; padding:12px 14px; }
+  .story-line { display:grid; grid-template-columns:auto minmax(220px,1fr); align-items:center; gap:10px; }
+  .story-line label,.story-slides-label { font-size:12px; font-weight:800; color:#3e4b60; }
+  .story-line select { min-width:260px; }
+  .story-slides { display:flex; flex-wrap:wrap; align-items:center; gap:5px; min-height:28px; }
+  .story-slide-index { font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  .story-tab-active { position:relative; z-index:10; transform:translateY(6px); border:1px solid #3b7ca8!important; border-bottom:0!important; border-radius:7px 7px 0 0!important; background:#dff2ff!important; color:#23485f!important; box-shadow:inset 0 0 0 1px #8ac9ec!important; }
+
+  .story-overlay { min-width:0; width:310px; max-width:calc(100% - 52px); }
+  .story-overlay-inner { gap:9px; padding:11px 12px; }
+  .story-line { display:block; }
+  .story-line label,.story-slides-label { display:block; margin-bottom:5px; }
+  .story-line select { min-width:0; width:100%; }
+  .story-slides { display:block; min-height:0; }
+  .story-slide-nav { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+  .story-slide-arrow { display:inline-flex;align-items:center;justify-content:center;min-width:27px;height:25px;padding:0 4px;border:1px solid #aeb8c8;border-radius:6px;background:#f3f6fa;color:#465267;font:800 12px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;cursor:pointer; }
+  .story-slide-index { display:inline-flex;align-items:center;justify-content:center;min-width:25px;height:25px;padding:0 5px;border:1px solid #b9c3d0;border-radius:6px;background:#eef1f5;color:#485568;font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;cursor:pointer; }
+  .story-slide-index.current { border-color:#3b7ca8;background:#dff2ff;color:#23485f;box-shadow:inset 0 0 0 1px #8ac9ec; }
+
+  .story-slide-window { position:absolute;z-index:6;display:none;width:min(310px,calc(100% - 52px));min-height:180px;border:1px solid #b8c3d1;border-radius:0;background:#fff;box-shadow:0 2px 10px rgb(31 45 70 / .10); }
+  .story-slide-window.open { display:block; }
+  .story-slide-handle { position:absolute;left:-1px;top:-30px;height:30px;max-width:calc(100% - 24px);padding:0 12px;display:flex;align-items:center;border:1px solid #aeb8c8;border-bottom-color:#fff;border-radius:7px 7px 0 0;background:#fff;color:#263246;font-size:12px;font-weight:800;cursor:move;user-select:none;touch-action:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .story-slide-body { padding:16px;min-height:148px;color:#263246;background:#fff; }
+
+  .illustration-drag-handle { cursor:move;touch-action:none; }
+  .illustration-drag-handle rect { fill:#f3f6fa;stroke:#8d99aa;stroke-width:1; }
+  .illustration-drag-handle path { fill:none;stroke:#596679;stroke-width:1.2;stroke-linecap:round; }
+
+
+  .story-slide-resize {
+    position:absolute;
+    right:2px;
+    bottom:2px;
+    width:16px;
+    height:16px;
+    cursor:nwse-resize;
+    touch-action:none;
+    background:
+      linear-gradient(135deg,
+        transparent 0 40%,
+        #8793a5 40% 48%,
+        transparent 48% 58%,
+        #8793a5 58% 66%,
+        transparent 66% 76%,
+        #8793a5 76% 84%,
+        transparent 84%);
+    opacity:.82;
+  }
+  .story-chapter-nav {
+    display:flex;
+    align-items:center;
+    gap:5px;
+  }
+  .story-chapter-nav select { flex:1 1 auto; }
+  .story-chapter-arrow {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:27px;
+    height:25px;
+    padding:0 4px;
+    border:1px solid #aeb8c8;
+    border-radius:6px;
+    background:#f3f6fa;
+    color:#465267;
+    font:800 12px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    cursor:pointer;
+  }
+
+
+  .widget {
+    display:flex;
+    flex-direction:column;
+  }
+  .status { flex:0 0 auto; }
+  .canvas-wrap {
+    flex:1 1 auto;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+  }
+  .network-stage {
+    flex:1 1 auto;
+    min-height:0;
+  }
+  .network-surfaces {
+    height:100%;
+    min-height:0;
+  }
+  .network-surfaces > #network {
+    height:100%;
+    min-height:100%;
+  }
+  .hint,.bottom-controls { flex:0 0 auto; }
+
+  .illustration-drag-handle .resize-grip {
+    fill:#8793a5;
+    stroke:none;
+  }
+
+  .controls-sidebar.open {
+    border-radius: 0 0 8px 0;
+  }
+  .network-sidebar.open {
+    border-radius: 0 0 0 8px;
+  }
+
   .hint {
     padding: 5px 10px 6px;
     border-top: 1px solid #e2e7ef;
@@ -444,7 +871,7 @@
       white-space: normal;
       overflow-wrap: anywhere;
     }
-    .canvas-wrap { overflow-x: auto; overscroll-behavior-x: contain; }
+    .canvas-wrap { overflow: visible; }
     #network { min-width: 0; width: 100%; }
     #network[data-n="16"] { min-width: 520px; }
     #network[data-n="32"] { min-width: 760px; }
@@ -463,6 +890,17 @@
 </head>
 <body>
 <main class="widget" aria-label="Reverse butterfly and reverse omega network visualizer">
+  <div id="widgetResizeHandle" class="widget-resize-handle" aria-label="Resize widget" title="Resize widget"></div>
+
+  <div id="status" class="status" role="status" aria-live="polite"></div>
+  <div class="canvas-wrap">
+    <div class="network-stage">
+      <aside id="controlsSidebar" class="controls-sidebar open" aria-label="Widget controls">
+        <button id="controlsSidebarTab" class="controls-sidebar-tab" type="button" aria-expanded="true" aria-controls="controlsSidebarContent">
+          <span>Widget Controls</span>
+        </button>
+        <div id="controlsSidebarContent" class="controls-sidebar-content">
+          <button id="resetControls" class="controls-reset-button" type="button">Reset</button>
   <div class="controls">
     <div class="control-group">
       <label class="caption" for="nSelect">Size</label>
@@ -471,6 +909,13 @@
         <option value="16">N = 16</option>
         <option value="32">N = 32</option>
         <option value="64">N = 64</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label class="caption" for="modeSelect">Mode</label>
+      <select id="modeSelect" aria-label="Operation mode">
+        <option value="gather" selected>Gather-Flip (BMGF)</option>
+        <option value="scatter">Scatter-Flip (BMSF)</option>
       </select>
     </div>
     <div class="control-group">
@@ -488,8 +933,8 @@
   <div class="checks" aria-label="Display options">
     <label><input id="autoConfig" type="checkbox"> Auto-config</label>
     <label><input id="showBoxes" type="checkbox"> 2×2 switch boxes</label>
-    <label><input id="showUpperCarry" type="checkbox"> LSB→MSB zero-toggling band</label>
-    <label><input id="showLowerCarry" type="checkbox"> MSB→LSB one-toggling band</label>
+    <label><input id="showUpperCarry" type="checkbox"> LSB→MSB band</label>
+    <label><input id="showLowerCarry" type="checkbox"> MSB→LSB band</label>
     <label><input id="showWalls" type="checkbox"> Walls</label>
     <label><input id="showGeneralizedShuffle" type="checkbox"> Shuffles</label>
     <label><input id="showStars" type="checkbox"> Correction stars</label>
@@ -500,6 +945,7 @@
     <label><input id="showPairArcs" type="checkbox"> Paired-switch arcs</label>
     <label><input id="moveOnArcs" type="checkbox"> Move on arcs</label>
     <label><input id="autoAlign" type="checkbox"> Auto-align</label>
+    <label><input id="reverseDataflow" type="checkbox"> Reverse dataflow</label>
   </div>
   <div class="input-presets" aria-label="Layout and input patterns">
     <button id="layoutButterfly" type="button">1 · Reverse butterfly</button>
@@ -513,21 +959,53 @@
     <button id="inputsAll0" type="button">All 0</button>
     <button id="inputsAlternating" type="button">Alternating</button>
     <button id="inputsRandom" type="button">Random</button>
+    <button id="inputsReshuffle" type="button">Reshuffle</button>
     <button id="toggleAllInputs" type="button">Toggle all inputs</button>
     <span class="preset-separator" aria-hidden="true"></span>
     <label class="caption">Switches</label>
     <button id="setSwitches" type="button">Set switches</button>
     <button id="resetSwitches" type="button">Reset switches</button>
     <button id="toggleAllSwitches" type="button">Toggle all switches</button>
+    <button id="randomizeSwitches" type="button">Randomize switches</button>
   </div>
+        </div>
+      </aside>
 
-  <div id="status" class="status" role="status" aria-live="polite"></div>
-  <div class="canvas-wrap">
-    <canvas id="motionGuideCanvas" class="motion-surface" aria-hidden="true"></canvas>
-    <svg id="network" xmlns="http://www.w3.org/2000/svg" role="img"
-         aria-label="Interactive reverse butterfly and reverse omega network"></svg>
-    <canvas id="motionCanvas" class="motion-surface" aria-hidden="true"></canvas>
-    <svg id="motionOverlay" class="motion-surface" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+      <div class="network-surfaces">
+        <div class="canvas-tabs" role="tablist" aria-label="Widget mode">
+          <button id="tabPlay" type="button" class="canvas-tab active" role="tab" aria-selected="true">Playground</button>
+          <button id="tabStory" type="button" class="canvas-tab" role="tab" aria-selected="false">Story / Study</button>
+          <button id="tabChallenge" type="button" class="canvas-tab" role="tab" aria-selected="false">Challenge</button>
+        </div>
+        <section id="challengeOverlay" class="challenge-overlay" aria-label="Challenge controls">
+          <div class="challenge-topbar">
+            <button id="challengeStop" class="challenge-stop" type="button" aria-label="Stop" title="Stop">■</button>
+            <button id="challengePlay" class="challenge-play" type="button">Play ▶</button>
+            <div id="challengeScore" class="challenge-score">00000</div>
+            <div id="challengeClock" class="challenge-clock">0:30</div>
+          </div>
+          <div class="challenge-settings">
+            <div class="challenge-group"><div class="challenge-group-title">Initial Speed</div><div class="challenge-speed"><span>3 s / move</span><input id="challengeSpeed" type="range" min="3" max="30" step="1" value="5"><output id="challengeSpeedValue">5 s / move</output></div></div>
+            <div class="challenge-group"><div class="challenge-group-title">Mode</div><div class="challenge-options"><label><input type="checkbox" value="gather" checked> Gather-Flip (BMGF)</label><label><input type="checkbox" value="scatter" checked> Scatter-Flip (BMSF)</label></div></div>
+            <div class="challenge-group"><div class="challenge-group-title">Size</div><div class="challenge-options"><label><input type="checkbox" value="8" checked> N=8</label><label><input type="checkbox" value="16" checked> N=16</label><label><input type="checkbox" value="32"> N=32</label><label><input type="checkbox" value="64"> N=64</label></div></div>
+            <div class="challenge-group"><div class="challenge-group-title">Network</div><div class="challenge-options"><label><input type="checkbox" value="butterfly" checked> Butterfly</label><label><input type="checkbox" value="omega" checked> Omega</label><label><input type="checkbox" value="rnetwork" checked> R-Network</label></div></div>
+            <div class="challenge-group"><div class="challenge-group-title">Direction</div><div class="challenge-options"><label><input id="challengeTopDown" type="checkbox" checked> Top-Down</label><label><input id="challengeBottomUp" type="checkbox" checked> Bottom-Up</label><label><input id="challengeFreestyle" type="checkbox" checked> Freestyle</label></div></div>
+          </div>
+        </section>
+        <section id="storyOverlay" class="story-overlay" aria-label="Story or study controls">
+          <div class="story-overlay-inner">
+            <div class="story-line"><label for="storySelect">Story or presentation:</label><select id="storySelect"><option value="intro">Example presentation</option></select></div>
+            <div class="story-line"><label for="chapterSelect">Current chapter:</label><select id="chapterSelect"></select></div>
+            <div class="story-slides"><span id="storySlidesLabel" class="story-slides-label">Slides (0-0 of 0):</span><div class="story-slide-nav"><button id="storyPrevSlide" class="story-slide-arrow" type="button" aria-label="Previous slide">◀</button><span id="storySlideIndices"></span><button id="storyNextSlide" class="story-slide-arrow" type="button" aria-label="Next slide">▶</button></div></div>
+          </div>
+        </section>
+        <section id="storySlideWindow" class="story-slide-window" aria-label="Current slide"><div id="storySlideHandle" class="story-slide-handle">Slide</div><div id="storySlideBody" class="story-slide-body"></div><div id="storySlideResize" class="story-slide-resize" aria-label="Resize slide window" title="Resize"></div></section>
+        <canvas id="motionGuideCanvas" class="motion-surface" aria-hidden="true"></canvas>
+        <svg id="network" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Interactive reverse butterfly and reverse omega network"></svg>
+        <canvas id="motionCanvas" class="motion-surface" aria-hidden="true"></canvas>
+        <svg id="motionOverlay" class="motion-surface" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+      </div>
 
     <aside id="networkSidebar" class="network-sidebar" aria-label="Switch diagrams">
       <button id="networkSidebarTab" class="network-sidebar-tab" type="button" aria-expanded="false" aria-controls="networkSidebarContent">
@@ -552,8 +1030,9 @@
         </section>
       </div>
     </aside>
+    </div>
   </div>
-  <div class="hint">Click an input to toggle its bit. Click either switch in a pair—or its box—to toggle pass-through/cross-over. Drag an individual switch; overlap at least half of its matching switch to snap into alignment. Keyboard: Tab, then Enter or Space.</div>
+  <div class="hint">Click an input or output endpoint to toggle that signal’s control bit. Click either switch in a pair—or its box—to toggle pass-through/cross-over. Drag an individual switch; overlap at least half of its matching switch to snap into alignment. Keyboard: Tab, then Enter or Space.</div>
   <div class="bottom-controls">
     <div class="control-group labels">
       <label class="caption" for="customLabels">Signal labels</label>
@@ -576,6 +1055,10 @@
     motionGuideCanvas: document.getElementById('motionGuideCanvas'),
     motionCanvas: document.getElementById('motionCanvas'),
     motionOverlay: document.getElementById('motionOverlay'),
+    widget: document.querySelector('.widget'),
+    widgetResizeHandle: document.getElementById('widgetResizeHandle'),
+    controlsSidebar: document.getElementById('controlsSidebar'),
+    controlsSidebarTab: document.getElementById('controlsSidebarTab'),
     sidebar: document.getElementById('networkSidebar'),
     sidebarTab: document.getElementById('networkSidebarTab'),
     sidebarContent: document.getElementById('networkSidebarContent'),
@@ -584,6 +1067,7 @@
     miniRNetwork: document.getElementById('miniRNetwork'),
     miniInputOutput: document.getElementById('miniInputOutput'),
     status: document.getElementById('status'),
+    modeSelect: document.getElementById('modeSelect'),
     nSelect: document.getElementById('nSelect'),
     speed: document.getElementById('speed'),
     speedValue: document.getElementById('speedValue'),
@@ -609,15 +1093,43 @@
     pairArcs: document.getElementById('showPairArcs'),
     moveOnArcs: document.getElementById('moveOnArcs'),
     autoAlign: document.getElementById('autoAlign'),
+    reverseDataflow: document.getElementById('reverseDataflow'),
     generalizedShuffle: document.getElementById('showGeneralizedShuffle'),
     inputsAll1: document.getElementById('inputsAll1'),
     inputsAll0: document.getElementById('inputsAll0'),
     inputsAlternating: document.getElementById('inputsAlternating'),
     inputsRandom: document.getElementById('inputsRandom'),
+    inputsReshuffle: document.getElementById('inputsReshuffle'),
     toggleAllInputs: document.getElementById('toggleAllInputs'),
     setSwitches: document.getElementById('setSwitches'),
     resetSwitches: document.getElementById('resetSwitches'),
-    toggleAllSwitches: document.getElementById('toggleAllSwitches')
+    toggleAllSwitches: document.getElementById('toggleAllSwitches'),
+    randomizeSwitches: document.getElementById('randomizeSwitches'),
+    tabPlay: document.getElementById('tabPlay'),
+    tabStory: document.getElementById('tabStory'),
+    tabChallenge: document.getElementById('tabChallenge'),
+    resetControls: document.getElementById('resetControls'),
+    challengeOverlay: document.getElementById('challengeOverlay'),
+    challengeStop: document.getElementById('challengeStop'),
+    challengePlay: document.getElementById('challengePlay'),
+    challengeScore: document.getElementById('challengeScore'),
+    challengeClock: document.getElementById('challengeClock'),
+    challengeSpeed: document.getElementById('challengeSpeed'),
+    challengeSpeedValue: document.getElementById('challengeSpeedValue'),
+    challengeTopDown: document.getElementById('challengeTopDown'),
+    challengeBottomUp: document.getElementById('challengeBottomUp'),
+    challengeFreestyle: document.getElementById('challengeFreestyle'),
+    storyOverlay: document.getElementById('storyOverlay'),
+    storySelect: document.getElementById('storySelect'),
+    chapterSelect: document.getElementById('chapterSelect'),
+    storySlidesLabel: document.getElementById('storySlidesLabel'),
+    storySlideIndices: document.getElementById('storySlideIndices'),
+    storyPrevSlide: document.getElementById('storyPrevSlide'),
+    storyNextSlide: document.getElementById('storyNextSlide'),
+    storySlideWindow: document.getElementById('storySlideWindow'),
+    storySlideHandle: document.getElementById('storySlideHandle'),
+    storySlideBody: document.getElementById('storySlideBody'),
+    storySlideResize: document.getElementById('storySlideResize')
   };
 
   const state = {
@@ -626,6 +1138,7 @@
     speed: 2,
     stageSpacing: 4,
     inputs: [],
+    canonicalLabels: [],
     pairState: [],
     layers: [],
     carry: [],
@@ -636,6 +1149,18 @@
     shuffleDigitAnimations: new Map(),
     shuffleEditors: new Map(),
     autoAligning: false,
+    challengeMode: false,
+    storyMode: false,
+    storyCurrentSlide: 1,
+    storySlideWindowMoved: false,
+    storySlideDrag: null,
+    storySlideResizeDrag: null,
+    illustrationOffset: {x:0,y:0},
+    illustrationDrag: null,
+    challengeState: 'idle',
+    challengeRemainingMs: 30000,
+    challengeTimerId: null,
+    challengeLastTick: 0,
     layout: 'butterfly',
     collapsed: false,
     motion: null,
@@ -736,6 +1261,59 @@
     return ((x << k) | (x >>> (n - k))) & mask;
   }
 
+  function isScatterMode() {
+    return !!el.modeSelect && el.modeSelect.value === 'scatter';
+  }
+
+  function flowSign() {
+    return isScatterMode() ? -1 : 1;
+  }
+
+  function syncCanvasToWidget(){
+    if(window.matchMedia('(max-width:760px)').matches)return;
+    const widget=el.widget;
+    const wrap=widget.querySelector('.canvas-wrap');
+    const status=el.status?.getBoundingClientRect().height||0;
+    const hint=widget.querySelector('.hint')?.getBoundingClientRect().height||0;
+    const bottom=widget.querySelector('.bottom-controls')?.getBoundingClientRect().height||0;
+    const available=Math.max(300,widget.clientHeight-status-hint-bottom);
+    wrap.style.height=`${available}px`;
+    const surface=widget.querySelector('.network-surfaces');
+    if(surface)surface.style.height='100%';
+  }
+
+  function updatePanelScrollLimits() {
+    if (!el.widget) return;
+    const rect = el.widget.getBoundingClientRect();
+    const available = Math.max(140, rect.height - 110);
+    const leftContent = document.getElementById('controlsSidebarContent');
+    const rightContent = document.getElementById('networkSidebarContent');
+    if (leftContent) leftContent.style.maxHeight = `${available}px`;
+    if (rightContent) rightContent.style.maxHeight = `${available}px`;
+  }
+
+  function fitWidgetToViewportOnLoad() {
+    if (window.matchMedia('(max-width: 760px)').matches || !el.widget) return;
+    const rect = el.widget.getBoundingClientRect();
+    if (rect.top <= 16) {
+      const margin = 8;
+      const w = Math.max(620, window.innerWidth - margin * 2);
+      const h = Math.max(420, window.innerHeight - margin * 2);
+      el.widget.style.width = `${w}px`;
+      el.widget.style.height = `${h}px`;
+      updatePanelScrollLimits();
+    }
+  }
+
+  function autoScrollDocumentNearEdges(clientX, clientY) {
+    const edge = 36;
+    const step = 28;
+    if (clientX > window.innerWidth - edge) window.scrollBy(step, 0);
+    else if (clientX < edge) window.scrollBy(-step, 0);
+    if (clientY > window.innerHeight - edge) window.scrollBy(0, step);
+    else if (clientY < edge) window.scrollBy(0, -step);
+  }
+
   function geometry() {
     const W = 1440;
     const left = 122;
@@ -761,20 +1339,23 @@
     // corresponding space between successive switch rows / switch boxes.
     const switchPortOffset = r / Math.SQRT2;
     const effectiveHalfHeight = lerp(switchPortOffset, boxHalfHeight, routeProgress);
-    const inputY = firstStageY - stageGap + effectiveHalfHeight - ioH / 2;
-    const lastStageY = firstStageY + (state.n - 1) * stageGap;
-    const outputY = lastStageY + stageGap - effectiveHalfHeight + ioH / 2;
-    const H = outputY + ioH / 2 + 54;
+    const topY = firstStageY - stageGap + effectiveHalfHeight - ioH / 2;
+    const lastStageTopOrderY = firstStageY + (state.n - 1) * stageGap;
+    const bottomY = lastStageTopOrderY + stageGap - effectiveHalfHeight + ioH / 2;
+    const scatter = isScatterMode();
+    const inputY = scatter ? bottomY : topY;
+    const outputY = scatter ? topY : bottomY;
+    const H = bottomY + ioH / 2 + 54;
 
     return {
       W, H, left, right, dx, x0, firstStageY, stageGap,
-      inputY, outputY, r, ioW, ioH, boxPad, boxHalfHeight,
+      inputY, outputY, topY, bottomY, r, ioW, ioH, boxPad, boxHalfHeight,
       routeProgress,
       boxOpacity: smoothstep(clamp((state.boxProgress - 0.70) / 0.30)),
       nodeOpacity: clamp(1.15 * routeProgress),
       labelX: x0 - 78,
       x: slot => x0 + slot * dx,
-      stageY: s => firstStageY + s * stageGap
+      stageY: s => firstStageY + (scatter ? (state.n - 1 - s) : s) * stageGap
     };
   }
 
@@ -856,6 +1437,7 @@
     state.N = N;
     state.n = Math.round(Math.log2(N));
     const labels = labelsForCurrentInput();
+    state.canonicalLabels = labels.slice();
     state.inputs = Array.from({ length: N }, (_, j) => ({
       value: j % 2 === 0 ? 1 : 0,
       label: labels[j],
@@ -884,23 +1466,46 @@
   }
 
   function recompute() {
-    state.layers = [state.inputs.map(sig => ({ ...sig }))];
-    for (let s = 0; s < state.n; s++) {
-      const input = state.layers[s];
-      const output = Array(state.N);
-      for (let q = 0; q < state.N / 2; q++) {
-        const j0 = rotL(2 * q, s, state.n);
-        const j1 = rotL(2 * q + 1, s, state.n);
-        if (state.pairState[s][q] === 0) {
-          output[j0] = { ...input[j0] };
-          output[j1] = { ...input[j1] };
-        } else {
-          output[j0] = { ...input[j1] };
-          output[j1] = { ...input[j0] };
+    const buildLayers = () => {
+      state.layers = [state.inputs.map(sig => ({ ...sig }))];
+      for (let s = 0; s < state.n; s++) {
+        const input = state.layers[s];
+        const output = Array(state.N);
+        for (let q = 0; q < state.N / 2; q++) {
+          const j0 = rotL(2 * q, s, state.n);
+          const j1 = rotL(2 * q + 1, s, state.n);
+          if (state.pairState[s][q] === 0) {
+            output[j0] = { ...input[j0] };
+            output[j1] = { ...input[j1] };
+          } else {
+            output[j0] = { ...input[j1] };
+            output[j1] = { ...input[j0] };
+          }
         }
+        state.layers.push(output);
       }
-      state.layers.push(output);
+    };
+
+    const canonical = state.canonicalLabels.length === state.N
+      ? state.canonicalLabels
+      : labelsForCurrentInput();
+
+    if (!el.reverseDataflow.checked) {
+      for (let j = 0; j < state.N; j++) state.inputs[j].label = canonical[j];
+      buildLayers();
+    } else {
+      // First establish the origin permutation, then make the physical output
+      // row canonical and back-propagate the corresponding labels to inputs.
+      buildLayers();
+      const finalLayer = state.layers[state.n];
+      const outByOrigin = Array(state.N);
+      for (let out = 0; out < state.N; out++) outByOrigin[finalLayer[out].origin] = out;
+      for (let origin = 0; origin < state.N; origin++) {
+        state.inputs[origin].label = canonical[outByOrigin[origin]];
+      }
+      buildLayers();
     }
+
     computeCarryAndChecks();
     runSelfTests();
   }
@@ -1757,6 +2362,8 @@
   function visualGeometry(g) {
     const switchGeom = Array.from({ length: state.n }, () => Array(state.N));
     const d = g.r / Math.SQRT2;
+    const sign = flowSign();
+
     for (let s = 0; s < state.n; s++) {
       for (let j = 0; j < state.N; j++) {
         const physical = rotR(j, s, state.n);
@@ -1766,15 +2373,21 @@
           center,
           side,
           q: physical >> 1,
-          upperLeft: { x: center.x - d, y: center.y - d },
-          upperRight: { x: center.x + d, y: center.y - d },
-          output: { x: center.x + (side === 0 ? -d : d), y: center.y + d }
+          upperLeft: { x: center.x - d, y: center.y - sign * d },
+          upperRight: { x: center.x + d, y: center.y - sign * d },
+          output: { x: center.x + (side === 0 ? -d : d), y: center.y + sign * d }
         };
       }
     }
 
-    const inputPorts = Array.from({ length: state.N }, (_, j) => ({ x: state.inputPositions[j].x, y: g.inputY + g.ioH / 2 }));
-    const outputPorts = Array.from({ length: state.N }, (_, j) => ({ x: state.outputPositions[j].x, y: g.outputY - g.ioH / 2 }));
+    const inputPorts = Array.from({ length: state.N }, (_, j) => ({
+      x: state.inputPositions[j].x,
+      y: g.inputY + sign * g.ioH / 2
+    }));
+    const outputPorts = Array.from({ length: state.N }, (_, j) => ({
+      x: state.outputPositions[j].x,
+      y: g.outputY - sign * g.ioH / 2
+    }));
     const stageInputNodes = Array.from({ length: state.n }, () => Array(state.N));
     const stageOutputNodes = Array.from({ length: state.n }, () => Array(state.N));
     const stageSources = Array.from({ length: state.n }, () => Array(state.N));
@@ -1784,9 +2397,9 @@
       for (let j = 0; j < state.N; j++) {
         stageSources[s][j] = sources[j];
         const physical = rotR(j, s, state.n);
-        const fixedInput = { x: g.x(physical), y: g.stageY(s) - g.boxHalfHeight };
+        const fixedInput = { x: g.x(physical), y: g.stageY(s) - sign * g.boxHalfHeight };
         stageInputNodes[s][j] = pointLerp(sources[j], fixedInput, g.routeProgress);
-        const fixedOutput = { x: g.x(physical), y: g.stageY(s) + g.boxHalfHeight };
+        const fixedOutput = { x: g.x(physical), y: g.stageY(s) + sign * g.boxHalfHeight };
         stageOutputNodes[s][j] = pointLerp(switchGeom[s][j].output, fixedOutput, g.routeProgress);
       }
       sources = stageOutputNodes[s];
@@ -2726,7 +3339,8 @@
     const textY = y + fontSize * 0.28;
     const bitX = x + g.ioW / 2 - 2.2;
     const bitY = y + g.ioH / 2 - 2.1;
-    const indexY = kind === 'input' ? y - g.ioH / 2 - 5 : y + g.ioH / 2 + 10;
+    const isTopRow = y < g.H / 2;
+    const indexY = isTopRow ? y - g.ioH / 2 - 5 : y + g.ioH / 2 + 10;
     const bitIndex = state.N - 1 - j;
     const indexEven = (bitIndex & 1) === 0;
     const indexX = indexEven ? x + g.ioW / 2 - 1.5 : x - g.ioW / 2 + 1.5;
@@ -2860,10 +3474,15 @@
       }
       annotations += permutationGadget(readoutX, g.outputY + g.ioH / 2 + 22, generalizedShuffleString('output'), 'output', g);
     }
-    annotations += `<text x="${fmt(state.inputPositions[0].x)}" y="${fmt(g.inputY - g.ioH / 2 - 18)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">MSB</text>`;
-    annotations += `<text x="${fmt(state.inputPositions[state.N - 1].x)}" y="${fmt(g.inputY - g.ioH / 2 - 18)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">LSB</text>`;
-    annotations += `<text x="${fmt(state.outputPositions[0].x)}" y="${fmt(g.outputY + g.ioH / 2 + 25)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">MSB</text>`;
-    annotations += `<text x="${fmt(state.outputPositions[state.N - 1].x)}" y="${fmt(g.outputY + g.ioH / 2 + 25)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">LSB</text>`;
+    const inputLabelY = g.inputY < g.H/2 ? g.inputY - g.ioH/2 - 18 : g.inputY + g.ioH/2 + 25;
+    const outputLabelY = g.outputY < g.H/2 ? g.outputY - g.ioH/2 - 18 : g.outputY + g.ioH/2 + 25;
+    annotations += `<text x="${fmt(state.inputPositions[0].x)}" y="${fmt(inputLabelY)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">MSB</text>`;
+    annotations += `<text x="${fmt(state.inputPositions[state.N - 1].x)}" y="${fmt(inputLabelY)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">LSB</text>`;
+    annotations += `<text x="${fmt(state.outputPositions[0].x)}" y="${fmt(outputLabelY)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">MSB</text>`;
+    annotations += `<text x="${fmt(state.outputPositions[state.N - 1].x)}" y="${fmt(outputLabelY)}" text-anchor="middle" class="svg-label" font-size="${fmt(inputFont)}" font-weight="800">LSB</text>`;
+    const bottomRowY=Math.max(g.inputY,g.outputY);
+    const bottomLSBX=(g.inputY>g.outputY?state.inputPositions[state.N-1].x:state.outputPositions[state.N-1].x);
+    annotations+=`<g class="illustration-drag-handle" data-type="illustration-drag" transform="translate(${fmt(bottomLSBX+38)} ${fmt(bottomRowY+g.ioH/2+18)})"><rect x="-9" y="-9" width="18" height="18" rx="3" opacity="0"/><path class="resize-grip" d="M-7 7L7-7L7-2L-2 7ZM0 7L7 0L7 5L5 7Z"/></g>`;
 
     for (let j = 0; j < state.N; j++) {
       const ix = state.inputPositions[j].x;
@@ -2871,7 +3490,7 @@
       ioLayer += renderIOBox(g, ix, g.inputY, state.inputs[j], 'input', j);
       ioLayer += renderIOBox(g, ox, g.outputY, finalLayer[j], 'output', j);
       hits += `<rect class="hit" data-type="input" data-j="${j}" tabindex="0" role="button" aria-label="Input ${j}, value ${state.inputs[j].value === 2 ? 'X' : state.inputs[j].value}: click to toggle, drag to move" x="${fmt(ix - g.ioW / 2 - 3)}" y="${fmt(g.inputY - g.ioH / 2 - 3)}" width="${fmt(g.ioW + 6)}" height="${fmt(g.ioH + 6)}" rx="3"/>`;
-      hits += `<rect class="hit" data-type="output" data-j="${j}" tabindex="0" role="button" aria-label="Output ${j}: drag to move" x="${fmt(ox - g.ioW / 2 - 3)}" y="${fmt(g.outputY - g.ioH / 2 - 3)}" width="${fmt(g.ioW + 6)}" height="${fmt(g.ioH + 6)}" rx="3"/>`;
+      hits += `<rect class="hit" data-type="output" data-j="${j}" tabindex="0" role="button" aria-label="Output ${j}: click to toggle its signal control value, drag to move" x="${fmt(ox - g.ioW / 2 - 3)}" y="${fmt(g.outputY - g.ioH / 2 - 3)}" width="${fmt(g.ioW + 6)}" height="${fmt(g.ioH + 6)}" rx="3"/>`;
     }
 
     const mobile = window.matchMedia('(max-width: 760px)').matches;
@@ -2921,6 +3540,8 @@
       `<g id="ioDecals">${ioLayer}</g>` +
       `<g id="hitTargets">${hits}</g>`;
 
+    const illustrationTransform=`translate(${fmt(state.illustrationOffset.x)} ${fmt(state.illustrationOffset.y)})`;
+    for(const id of ['guides','boxBacks','carryBands','walls','switchBacks','inactiveRoutes','signalGlows','signalCores','boxFronts','switchFronts','annotations','ioDecals','hitTargets']){const node=el.svg.querySelector(`#${id}`);if(node)node.setAttribute('transform',illustrationTransform);}
     updatePermutationReadouts(el.svg, now);
     if (state.shuffleEditors.size) {
       requestAnimationFrame(() => {
@@ -3238,6 +3859,7 @@
     setCheckboxAvailability(el.generalizedShuffle, true);
     setCheckboxAvailability(el.moveOnArcs, true);
     setCheckboxAvailability(el.autoAlign, true);
+    setCheckboxAvailability(el.reverseDataflow, true);
     setCheckboxAvailability(el.boxes, true);
     setCheckboxAvailability(el.auto, true);
   }
@@ -3504,6 +4126,7 @@
     const checks = state.carry.flat().filter(c => c.check).length;
     const totalChecks = state.n * state.N / 2;
     const fields = [
+      `mode=${isScatterMode() ? 'BMSF' : 'BMGF'}`,
       `N=${state.N}`,
       `stages=${state.n}`,
       `layout=${layoutText}${state.collapsed ? ' + collapsed' : ''}`,
@@ -3515,19 +4138,52 @@
   }
 
   function applyLabels() {
-    const labels = labelsForCurrentInput();
-    for (let j = 0; j < state.N; j++) state.inputs[j].label = labels[j];
+    state.canonicalLabels = labelsForCurrentInput();
     recompute();
     render();
   }
 
   function setInputPattern(kind) {
+    const preserveX = kind === 'random' && state.inputs[0]?.value === 2;
     for (let j = 0; j < state.N; j++) {
+      if (preserveX && j === 0) continue;
       if (kind === 'all1') state.inputs[j].value = 1;
       else if (kind === 'all0') state.inputs[j].value = 0;
       else if (kind === 'alternating') state.inputs[j].value = (j % 2 === 0 ? 1 : 0);
       else if (kind === 'random') state.inputs[j].value = Math.random() < 0.5 ? 0 : 1;
     }
+    recompute();
+    if (state.auto.enabled) {
+      clearAutoReverts();
+      forceAutoConfig();
+    }
+    render();
+  }
+
+  function reshuffleInputs() {
+    const indices = [];
+    const values = [];
+    for (let j = 0; j < state.N; j++) {
+      if (state.inputs[j].value === 2) continue;
+      indices.push(j);
+      values.push(state.inputs[j].value === 1 ? 1 : 0);
+    }
+    const original = values.slice();
+    const hasZero = original.includes(0);
+    const hasOne = original.includes(1);
+    for (let attempt = 0; attempt < 8; attempt++) {
+      for (let i = values.length - 1; i > 0; i--) {
+        const k = Math.floor(Math.random() * (i + 1));
+        [values[i], values[k]] = [values[k], values[i]];
+      }
+      if (values.some((v, i) => v !== original[i])) break;
+    }
+    if (hasZero && hasOne && values.every((v, i) => v === original[i])) {
+      const a = values.findIndex(v => v === 0);
+      const b = values.findIndex(v => v === 1);
+      [values[a], values[b]] = [values[b], values[a]];
+    }
+    for (let i = 0; i < indices.length; i++) state.inputs[indices[i]].value = values[i];
     recompute();
     if (state.auto.enabled) {
       clearAutoReverts();
@@ -3561,10 +4217,27 @@
     render();
   }
 
+  function toggleOutput(j, manual = true) {
+    const finalLayer = state.layers[state.n];
+    const origin = finalLayer[j].origin;
+    toggleInput(origin, manual);
+  }
+
   function togglePair(s, q, manual = true) {
     state.pairState[s][q] ^= 1;
     recompute();
     if (manual && state.auto.enabled) scheduleAutoRevert(s, q);
+    render();
+  }
+
+  function randomizeSwitches() {
+    setAutoConfig(false);
+    for (let s = 0; s < state.n; s++) {
+      for (let q = 0; q < state.N / 2; q++) {
+        state.pairState[s][q] = Math.random() < 0.5 ? 0 : 1;
+      }
+    }
+    recompute();
     render();
   }
 
@@ -3601,6 +4274,12 @@
     }
     return best;
   }
+
+  el.svg.addEventListener('pointerdown',e=>{const h=e.target.closest&&e.target.closest('[data-type="illustration-drag"]');if(!h)return;e.preventDefault();e.stopImmediatePropagation();state.illustrationDrag={id:e.pointerId,x:e.clientX,y:e.clientY,ox:state.illustrationOffset.x,oy:state.illustrationOffset.y};h.setPointerCapture(e.pointerId);},true);
+  el.svg.addEventListener('pointermove',e=>{const d=state.illustrationDrag;if(!d||d.id!==e.pointerId)return;e.preventDefault();e.stopImmediatePropagation();const r=el.svg.getBoundingClientRect(),vb=el.svg.viewBox.baseVal;state.illustrationOffset.x=d.ox+(e.clientX-d.x)*vb.width/r.width;state.illustrationOffset.y=d.oy+(e.clientY-d.y)*vb.height/r.height;render();},true);
+  const finishIllustrationDrag=e=>{if(!state.illustrationDrag||state.illustrationDrag.id!==e.pointerId)return;e.stopImmediatePropagation();state.illustrationDrag=null;};
+  el.svg.addEventListener('pointerup',finishIllustrationDrag,true);
+  el.svg.addEventListener('pointercancel',finishIllustrationDrag,true);
 
   el.svg.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
@@ -3707,6 +4386,7 @@
       }
     } else if (!drag.moved) {
       if (drag.type === 'input') toggleInput(drag.j, true);
+      else if (drag.type === 'output') toggleOutput(drag.j, true);
       else if (drag.type === 'box') togglePair(drag.s, drag.q, true);
     } else if (drag.type === 'input' || drag.type === 'output') {
       state.layout = 'custom';
@@ -3784,10 +4464,51 @@
     }
   });
 
+  function resetControlsToDefaults(includePrimary=false) {
+    if (includePrimary) { el.modeSelect.value='gather'; el.nSelect.value='8'; el.speed.value='2'; el.stageSpacing.value='4'; state.stageSpacing=4; }
+    for (const c of [el.auto,el.boxes,el.upper,el.lower,el.walls,el.generalizedShuffle,el.stars,el.checks,el.switchLabels,el.shades,el.silverGreen,el.pairArcs,el.moveOnArcs,el.autoAlign,el.reverseDataflow]) if(c) c.checked=false;
+    clearAutoReverts(); state.auto.enabled=false;
+    if (includePrimary) { resetNetwork(8); applyStageSpacing(); } else { recompute(); updateOptionAvailability(); render(); }
+  }
+  function formatChallengeClock(ms){ const t=Math.max(0,Math.ceil(ms/1000)); return `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`; }
+  function renderChallengeState(){ el.challengeClock.textContent=formatChallengeClock(state.challengeRemainingMs); el.widget.classList.toggle('challenge-running',state.challengeState==='running'); if(state.challengeState==='running'){el.challengePlay.innerHTML='Pause <span class="media-symbol">⏸︎</span>';el.challengeOverlay.classList.add('compact');} else if(state.challengeState==='paused'){el.challengePlay.innerHTML='Resume <span class="media-symbol">▶</span>';el.challengeOverlay.classList.add('compact');} else {el.challengePlay.innerHTML='Play <span class="media-symbol">▶</span>';el.challengeOverlay.classList.remove('compact');} }
+  function stopChallengeTimer(reset=true){ if(state.challengeTimerId!=null){clearInterval(state.challengeTimerId);state.challengeTimerId=null;} if(reset)state.challengeRemainingMs=30000; state.challengeState='idle'; renderChallengeState(); }
+  function startChallengeTimer(){ if(state.challengeState==='running')return; state.challengeState='running'; state.challengeLastTick=performance.now(); if(state.challengeTimerId!=null)clearInterval(state.challengeTimerId); state.challengeTimerId=setInterval(()=>{const now=performance.now(); state.challengeRemainingMs=Math.max(0,state.challengeRemainingMs-(now-state.challengeLastTick)); state.challengeLastTick=now; renderChallengeState(); if(state.challengeRemainingMs<=0)stopChallengeTimer(true);},100); renderChallengeState(); }
+  function pauseChallengeTimer(){ if(state.challengeState!=='running')return; if(state.challengeTimerId!=null){clearInterval(state.challengeTimerId);state.challengeTimerId=null;} state.challengeState='paused'; renderChallengeState(); }
+  const storyCatalog={intro:{title:'Example presentation',chapters:[
+    {title:'Introduction',first:1,last:3,slides:['Welcome','Overview','Goal']},
+    {title:'Networks',first:4,last:7,slides:['Reverse Butterfly','Reverse Omega','R-Network','Comparison']},
+    {title:'Summary',first:8,last:9,slides:['Summary','Next steps']}
+  ]}};
+  function currentStoryChapter(){const story=storyCatalog[el.storySelect.value]||storyCatalog.intro;return story.chapters[Number(el.chapterSelect.value)||0]||story.chapters[0];}
+  function storySlideTitle(slide){const story=storyCatalog[el.storySelect.value]||storyCatalog.intro;for(const c of story.chapters)if(slide>=c.first&&slide<=c.last)return c.slides?.[slide-c.first]||`Slide ${slide}`;return `Slide ${slide}`;}
+  function positionStorySlideWindow(force=false){if(!state.storyMode||(!force&&state.storySlideWindowMoved))return;const p=el.storySlideWindow.parentElement.getBoundingClientRect(),n=el.storyOverlay.getBoundingClientRect();el.storySlideWindow.style.left=`${Math.max(42,n.left-p.left)}px`;el.storySlideWindow.style.top=`${n.bottom-p.top+38}px`;}
+  function renderStorySlide(){const c=currentStoryChapter();state.storyCurrentSlide=Math.max(c.first,Math.min(c.last,state.storyCurrentSlide));const title=storySlideTitle(state.storyCurrentSlide);el.storySlideHandle.textContent=title;el.storySlideBody.innerHTML=`<strong>${esc(title)}</strong>`;el.storySlideIndices.querySelectorAll('[data-slide]').forEach(n=>n.classList.toggle('current',Number(n.dataset.slide)===state.storyCurrentSlide));}
+  function renderStoryNavigation(){const story=storyCatalog[el.storySelect.value]||storyCatalog.intro;const prev=Math.min(Number(el.chapterSelect.value||0),story.chapters.length-1);el.chapterSelect.innerHTML=story.chapters.map((c,i)=>`<option value="${i}">[${c.first}-${c.last}] ${esc(c.title)}</option>`).join('');el.chapterSelect.value=String(prev);const c=story.chapters[prev];const total=story.chapters.reduce((mx,x)=>Math.max(mx,x.last),0);if(state.storyCurrentSlide<c.first||state.storyCurrentSlide>c.last)state.storyCurrentSlide=c.first;el.storySlidesLabel.textContent=`Slides (${c.first}-${c.last} of ${total}):`;el.storySlideIndices.innerHTML=Array.from({length:c.last-c.first+1},(_,k)=>{const n=c.first+k;return `<button type="button" class="story-slide-index${n===state.storyCurrentSlide?' current':''}" data-slide="${n}">${n}</button>`}).join('');renderStorySlide();}
+  function setTabState(tab){ for(const b of [el.tabPlay,el.tabStory,el.tabChallenge]){const a=b===tab;b.classList.toggle('active',a);b.setAttribute('aria-selected',String(a));} }
+  function enterChallengeMode(){ leaveStoryMode(); state.challengeMode=true; el.widget.classList.add('challenge-mode'); el.challengeOverlay.classList.add('open'); setTabState(el.tabChallenge); el.tabChallenge.classList.add('challenge-tab-active','active'); resetControlsToDefaults(true); stopChallengeTimer(true); }
+  function leaveChallengeMode(){ state.challengeMode=false; el.widget.classList.remove('challenge-mode','challenge-running'); el.challengeOverlay.classList.remove('open','compact'); el.tabChallenge.classList.remove('challenge-tab-active'); stopChallengeTimer(true); }
+  function collapseSidePanels(){el.controlsSidebar.classList.remove('open');el.controlsSidebarTab.setAttribute('aria-expanded','false');el.sidebar.classList.remove('open');el.sidebarTab.setAttribute('aria-expanded','false');el.sidebar.style.width='32px';}
+  function enterStoryMode(){leaveChallengeMode();state.storyMode=true;state.storySlideWindowMoved=false;el.widget.classList.add('story-mode');el.storyOverlay.classList.add('open');el.storySlideWindow.classList.add('open');setTabState(el.tabStory);el.tabStory.classList.add('story-tab-active','active');resetControlsToDefaults(true);collapseSidePanels();renderStoryNavigation();requestAnimationFrame(()=>positionStorySlideWindow(true));}
+  function leaveStoryMode(){state.storyMode=false;el.widget.classList.remove('story-mode');el.storyOverlay.classList.remove('open');el.storySlideWindow.classList.remove('open');el.tabStory.classList.remove('story-tab-active');}
+
+  function applyModeChange() {
+    state.motion = null;
+    state.shuffleMotions.clear();
+    const g = geometry();
+    for (let s = 0; s < state.n; s++) {
+      for (let j = 0; j < state.N; j++) state.positions[s][j].y = g.stageY(s);
+    }
+    recompute();
+    render();
+  }
+
+  el.modeSelect.addEventListener('change', applyModeChange);
   el.nSelect.addEventListener('change', () => resetNetwork(Number(el.nSelect.value)));
   el.generalizedShuffle.addEventListener('change', () => { updateOptionAvailability(); render(); });
   el.moveOnArcs.addEventListener('change', updateOptionAvailability);
   el.autoAlign.addEventListener('change', () => { if (el.autoAlign.checked) autoAlignAll(); else updateOptionAvailability(); });
+  el.reverseDataflow.addEventListener('change', () => { recompute(); render(); });
 
   el.stageSpacing.addEventListener('input', () => {
     applyStageSpacing(el.stageSpacing.value);
@@ -3807,6 +4528,110 @@
   el.butterfly.addEventListener('click', () => startLayout('butterfly'));
   el.omega.addEventListener('click', () => startLayout('omega'));
   el.rnetwork.addEventListener('click', () => startLayout('rnetwork'));
+  let widgetResizeDrag = null;
+
+  el.widgetResizeHandle.addEventListener('pointerdown', event => {
+    if (window.matchMedia('(max-width: 760px)').matches) return;
+    event.preventDefault();
+    const rect = el.widget.getBoundingClientRect();
+    widgetResizeDrag = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startW: rect.width,
+      startH: rect.height
+    };
+    el.widgetResizeHandle.setPointerCapture(event.pointerId);
+  });
+
+  el.widgetResizeHandle.addEventListener('pointermove', event => {
+    if (!widgetResizeDrag || widgetResizeDrag.pointerId !== event.pointerId) return;
+    event.preventDefault();
+
+    const width = Math.max(620, widgetResizeDrag.startW + event.clientX - widgetResizeDrag.startX);
+    const height = Math.max(420, widgetResizeDrag.startH + event.clientY - widgetResizeDrag.startY);
+
+    el.widget.style.width = `${width}px`;
+    el.widget.style.height = `${height}px`;
+
+    // Explicitly enlarging the widget enlarges the document. Continue scrolling
+    // when the pointer approaches the visible document edge.
+    autoScrollDocumentNearEdges(event.clientX, event.clientY);
+    updatePanelScrollLimits();
+    syncCanvasToWidget();
+    if (el.sidebar.classList.contains('open')) sizeNetworkSidebar();
+  });
+
+  const finishWidgetResize = event => {
+    if (!widgetResizeDrag || widgetResizeDrag.pointerId !== event.pointerId) return;
+    widgetResizeDrag = null;
+    try { el.widgetResizeHandle.releasePointerCapture(event.pointerId); } catch {}
+    updatePanelScrollLimits();
+  };
+  el.widgetResizeHandle.addEventListener('pointerup', finishWidgetResize);
+  el.widgetResizeHandle.addEventListener('pointercancel', finishWidgetResize);
+
+  el.resetControls.addEventListener('click',()=>resetControlsToDefaults(false));
+  el.storySelect.addEventListener('change',()=>{state.storyCurrentSlide=1;renderStoryNavigation();});
+  el.chapterSelect.addEventListener('change',()=>{state.storyCurrentSlide=currentStoryChapter().first;renderStoryNavigation();});
+  el.storySlideIndices.addEventListener('click',e=>{const b=e.target.closest('[data-slide]');if(!b)return;state.storyCurrentSlide=Number(b.dataset.slide);renderStorySlide();});
+  el.storyPrevSlide.addEventListener('click',()=>{
+    const story=storyCatalog[el.storySelect.value]||storyCatalog.intro;
+    let ci=Number(el.chapterSelect.value)||0;
+    const c=story.chapters[ci];
+    if(state.storyCurrentSlide>c.first){
+      state.storyCurrentSlide--;
+      renderStorySlide();
+    }else if(ci>0){
+      ci--;
+      el.chapterSelect.value=String(ci);
+      state.storyCurrentSlide=story.chapters[ci].last;
+      renderStoryNavigation();
+    }
+  });
+  el.storyNextSlide.addEventListener('click',()=>{
+    const story=storyCatalog[el.storySelect.value]||storyCatalog.intro;
+    let ci=Number(el.chapterSelect.value)||0;
+    const c=story.chapters[ci];
+    if(state.storyCurrentSlide<c.last){
+      state.storyCurrentSlide++;
+      renderStorySlide();
+    }else if(ci<story.chapters.length-1){
+      ci++;
+      el.chapterSelect.value=String(ci);
+      state.storyCurrentSlide=story.chapters[ci].first;
+      renderStoryNavigation();
+    }
+  });
+  el.storySlideHandle.addEventListener('pointerdown',e=>{e.preventDefault();const r=el.storySlideWindow.getBoundingClientRect(),p=el.storySlideWindow.parentElement.getBoundingClientRect();state.storySlideDrag={id:e.pointerId,x:e.clientX,y:e.clientY,left:r.left-p.left,top:r.top-p.top};el.storySlideHandle.setPointerCapture(e.pointerId);});
+  el.storySlideHandle.addEventListener('pointermove',e=>{const d=state.storySlideDrag;if(!d||d.id!==e.pointerId)return;state.storySlideWindowMoved=true;el.storySlideWindow.style.left=`${d.left+e.clientX-d.x}px`;el.storySlideWindow.style.top=`${d.top+e.clientY-d.y}px`;});
+  const finishStorySlideDrag=e=>{if(!state.storySlideDrag||state.storySlideDrag.id!==e.pointerId)return;state.storySlideDrag=null;try{el.storySlideHandle.releasePointerCapture(e.pointerId);}catch{}};
+  el.storySlideHandle.addEventListener('pointerup',finishStorySlideDrag);
+  el.storySlideHandle.addEventListener('pointercancel',finishStorySlideDrag);
+
+  el.storySlideResize.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();const r=el.storySlideWindow.getBoundingClientRect();state.storySlideResizeDrag={id:e.pointerId,x:e.clientX,y:e.clientY,w:r.width,h:r.height};el.storySlideResize.setPointerCapture(e.pointerId);});
+  el.storySlideResize.addEventListener('pointermove',e=>{const d=state.storySlideResizeDrag;if(!d||d.id!==e.pointerId)return;e.preventDefault();const parent=el.storySlideWindow.parentElement.getBoundingClientRect();const r=el.storySlideWindow.getBoundingClientRect();const maxW=Math.max(180,parent.right-r.left-6);const maxH=Math.max(120,parent.bottom-r.top-6);el.storySlideWindow.style.width=`${Math.min(maxW,Math.max(220,d.w+e.clientX-d.x))}px`;el.storySlideWindow.style.height=`${Math.min(maxH,Math.max(120,d.h+e.clientY-d.y))}px`;});
+  const finishStorySlideResize=e=>{if(!state.storySlideResizeDrag||state.storySlideResizeDrag.id!==e.pointerId)return;state.storySlideResizeDrag=null;try{el.storySlideResize.releasePointerCapture(e.pointerId);}catch{}};
+  el.storySlideResize.addEventListener('pointerup',finishStorySlideResize);
+  el.storySlideResize.addEventListener('pointercancel',finishStorySlideResize);
+  el.challengeSpeed.addEventListener('input',()=>{el.challengeSpeedValue.textContent=`${el.challengeSpeed.value} s / move`;});
+  const enforceDirectionConstraint=changed=>{if(!el.challengeTopDown.checked&&!el.challengeBottomUp.checked)changed.checked=true;};
+  el.challengeTopDown.addEventListener('change',()=>enforceDirectionConstraint(el.challengeTopDown));
+  el.challengeBottomUp.addEventListener('change',()=>enforceDirectionConstraint(el.challengeBottomUp));
+  el.challengePlay.addEventListener('click',()=>{if(state.challengeState==='idle')startChallengeTimer(); else if(state.challengeState==='running')pauseChallengeTimer(); else startChallengeTimer();});
+  el.challengeStop.addEventListener('click',()=>stopChallengeTimer(true));
+
+  el.controlsSidebarTab.addEventListener('click', () => {
+    const open = !el.controlsSidebar.classList.contains('open');
+    el.controlsSidebar.classList.toggle('open', open);
+    el.controlsSidebarTab.setAttribute('aria-expanded', String(open));
+    updatePanelScrollLimits();
+  });
+
+  el.tabPlay.addEventListener('click',()=>{leaveChallengeMode();leaveStoryMode();setTabState(el.tabPlay);});
+  el.tabStory.addEventListener('click',()=>{if(!state.storyMode)enterStoryMode();});
+  el.tabChallenge.addEventListener('click',()=>{if(!state.challengeMode)enterChallengeMode();});
+
   el.sidebarTab.addEventListener('click', () => {
     const open = !el.sidebar.classList.contains('open');
     el.sidebar.classList.toggle('open', open);
@@ -3817,8 +4642,11 @@
     } else {
       el.sidebar.style.width = '32px';
     }
+    updatePanelScrollLimits();
   });
   window.addEventListener('resize', () => {
+    updatePanelScrollLimits();
+    syncCanvasToWidget();
     if (el.sidebar.classList.contains('open')) sizeNetworkSidebar();
   });
 
@@ -3830,10 +4658,12 @@
   el.inputsAll0.addEventListener('click', () => setInputPattern('all0'));
   el.inputsAlternating.addEventListener('click', () => setInputPattern('alternating'));
   el.inputsRandom.addEventListener('click', () => setInputPattern('random'));
+  el.inputsReshuffle.addEventListener('click', reshuffleInputs);
   el.toggleAllInputs.addEventListener('click', toggleAllInputs);
   el.setSwitches.addEventListener('click', setSwitchesOnce);
   el.resetSwitches.addEventListener('click', () => setAllSwitches('reset'));
   el.toggleAllSwitches.addEventListener('click', () => setAllSwitches('toggle'));
+  el.randomizeSwitches.addEventListener('click', randomizeSwitches);
   el.applyLabels.addEventListener('click', applyLabels);
   el.customLabels.addEventListener('keydown', event => {
     if (event.key === 'Enter') applyLabels();
@@ -3856,6 +4686,8 @@
         n: state.n,
         speed: state.speed,
         stageSpacing: state.stageSpacing,
+        mode: isScatterMode() ? 'scatter' : 'gather',
+        reverseDataflow: el.reverseDataflow.checked,
         layout: state.layout,
         collapsed: state.collapsed,
         movingTo: state.motion?.targetLayout ?? null,
@@ -3893,6 +4725,13 @@
   el.speedValue.textContent = `${state.speed.toFixed(2)} positions/s`;
   el.stageSpacingValue.textContent = `${state.stageSpacing} / 5`;
   resetNetwork(8);
+  renderChallengeState();
+  renderStoryNavigation();
+  requestAnimationFrame(() => {
+    fitWidgetToViewportOnLoad();
+    updatePanelScrollLimits();
+    syncCanvasToWidget();
+  });
 })();
 </script>
 </body>
