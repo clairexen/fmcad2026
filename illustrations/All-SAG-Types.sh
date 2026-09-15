@@ -13,7 +13,7 @@ else
 fi
 
 sources=(
-    "$script_dir/SAG-Type-I-BMCF-BMICF.svg"
+    "$script_dir/SAG-Type-I-BMCF-BMIC.svg"
     "$script_dir/SAG-Type-II-BMGF-BMSF.svg"
     "$script_dir/SAG-Type-III-BMEXT-BMDEP.svg"
 )

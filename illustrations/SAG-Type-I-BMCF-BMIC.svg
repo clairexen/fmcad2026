@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="545" viewBox="0 0 720 545" role="img" aria-labelledby="title desc">
-  <title id="title">Type I SAG (BMCF/BMICF) - The Centrifuge</title>
+  <title id="title">Type I SAG (BMCF/BMIC) - The Centrifuge</title>
   <desc id="desc">A flattened input path separates sheep and goats into their respective parking areas along smooth, rounded turns.</desc>
   <defs>
     <style>
@@ -79,6 +79,6 @@
 
     <text class="caption" x="690" y="447">Type I SAG</text>
     <text class="caption" x="690" y="479">&#8203;&quot;centrifuge&quot; (BMCF)&#8203;</text>
-    <text class="caption" x="690" y="511">&#8203;&quot;inverse-cfuge&quot; (BMICF)&#8203;</text>
+    <text class="caption" x="690" y="511">&#8203;&quot;inverse-cfuge&quot; (BMIC)&#8203;</text>
   </g>
 </svg>
