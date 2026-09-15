@@ -14,11 +14,47 @@
 //  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+// `define BMEXT_VIA_BMGF
+`define BMEXT_VIA_SHIFT
+
 module bmext #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
 ) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout, cout);
+`ifdef BMEXT_VIA_BMGF
 	bmgf #(XLOG2, XLEN) impl (din & cin, cin, dout, cout);
+`endif
+
+`ifdef BMEXT_VIA_SHIFT
+	genvar n, i;
+
+	generate
+		for (n = 0; n < XLOG2; n = n+1) begin:stage
+			wire [XLEN-1:0] st_di, st_ci, st_msk, st_xor, st_dt, st_ct, st_do, st_co;
+			assign st_xor[0] = !st_ci[0];
+			for (i = 1; i < XLEN; i = i+1) begin:control
+				assign st_xor[i] = !st_ci[i] ^ (st_xor[i-1] & st_msk[i-1]);
+			end
+			assign st_ct = ((st_xor & st_ci) >> 1) | (~st_xor & st_ci);
+			assign st_dt = ((st_xor & st_di) >> 1) | (~st_xor & st_di);
+			for (i = 0; i < (XLEN >> 1); i = i+1) begin:route
+				assign st_do[(XLEN >> 1) + i] = st_dt[2*i+1], st_do[i] = st_dt[2*i];
+				assign st_co[(XLEN >> 1) + i] = st_ct[2*i+1], st_co[i] = st_ct[2*i];
+			end
+		end
+		for (n = 1; n < XLOG2; n = n+1) begin:interconn
+			assign stage[n].st_msk = stage[n-1].st_msk &
+					({stage[n-1].st_msk, stage[n-1].st_msk} >> (XLEN >> n));
+			assign stage[n].st_di = stage[n-1].st_do, stage[n].st_ci = stage[n-1].st_co;
+		end
+	endgenerate
+
+	assign stage[0].st_di = din & cin;
+	assign stage[0].st_ci = cin;
+	assign stage[0].st_msk = (1 << (XLEN-1)) - 1;
+	assign dout = stage[XLOG2-1].st_do;
+	assign cout = stage[XLOG2-1].st_co;
+`endif
 
 `ifdef FORMAL
 	integer k, cnt1, cnt0;
