@@ -455,7 +455,7 @@
     top: 74px;
     left: 0;
     z-index: 7;
-    width: min(420px, calc(100% - 16px));
+    width: min(380px, calc(100% - 16px));
     max-height: calc(100% - 82px);
     border: 1px solid #b8c3d1;
     border-radius: 0 8px 8px 0;
@@ -804,6 +804,106 @@
     border-radius: 0 0 0 8px;
   }
 
+
+  /* Widget Controls buttons are intentionally light-weight; Reset remains
+     visually prominent. */
+  .controls-sidebar-content button:not(.controls-reset-button) {
+    font-weight: 400;
+  }
+  .controls-sidebar-content .controls-reset-button {
+    font-weight: 800;
+  }
+
+  /* The panel itself owns the height constraint. The content scroller then
+     gets the complete interior height instead of a viewport-derived height
+     that can disagree with the canvas/widget geometry. */
+  .controls-sidebar.open,
+  .network-sidebar.open {
+    top: 74px;
+    bottom: 8px;
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    overflow: visible;
+  }
+  .controls-sidebar-content,
+  .network-sidebar-content {
+    box-sizing: border-box;
+    height: 100%;
+    max-height: none !important;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+  .controls-sidebar-content {
+    padding-bottom: 12px;
+  }
+  .network-sidebar-content {
+    padding-bottom: 16px;
+  }
+
+  /* Keep the fixed-size handle outside the scrolling element. */
+  .controls-sidebar.open .controls-sidebar-tab,
+  .network-sidebar.open .network-sidebar-tab {
+    position: absolute;
+  }
+
+  @media (max-width: 760px) {
+    .controls-sidebar.open,
+    .network-sidebar.open {
+      top: auto;
+      bottom: auto;
+      height: auto;
+      max-height: none;
+    }
+    .controls-sidebar-content,
+    .network-sidebar-content {
+      height: auto;
+      max-height: none !important;
+      overflow: visible;
+    }
+  }
+
+
+  .controls-reset-button {
+    position: static !important;
+    float: none;
+    margin: 8px 8px 4px auto;
+    display: block;
+  }
+
+  .playground-quick-actions {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 8;
+    display: flex;
+    gap: 5px;
+  }
+  .playground-quick-actions button {
+    min-height: 30px;
+    padding: 4px 9px;
+    border: 1px solid #aeb8c8;
+    border-radius: 7px;
+    background: #f3f6fa;
+    color: #465267;
+    box-shadow: 0 1px 4px rgb(31 45 70 / .08);
+    font-weight: 400;
+    font-size: 12px;
+  }
+  .story-mode .playground-quick-actions,
+  .challenge-mode .playground-quick-actions {
+    display: none;
+  }
+  @media (max-width:760px) {
+    .playground-quick-actions {
+      top: 5px;
+      right: 5px;
+    }
+  }
+
   .hint {
     padding: 5px 10px 6px;
     border-top: 1px solid #e2e7ef;
@@ -958,7 +1058,7 @@
     <button id="inputsAll1" type="button">All 1</button>
     <button id="inputsAll0" type="button">All 0</button>
     <button id="inputsAlternating" type="button">Alternating</button>
-    <button id="inputsRandom" type="button">Random</button>
+    <button id="inputsRandom" type="button">Randomize</button>
     <button id="inputsReshuffle" type="button">Reshuffle</button>
     <button id="toggleAllInputs" type="button">Toggle all inputs</button>
     <span class="preset-separator" aria-hidden="true"></span>
@@ -976,6 +1076,10 @@
           <button id="tabPlay" type="button" class="canvas-tab active" role="tab" aria-selected="true">Playground</button>
           <button id="tabStory" type="button" class="canvas-tab" role="tab" aria-selected="false">Story / Study</button>
           <button id="tabChallenge" type="button" class="canvas-tab" role="tab" aria-selected="false">Challenge</button>
+        </div>
+        <div id="playgroundQuickActions" class="playground-quick-actions" aria-label="Playground input actions">
+          <button id="quickRandom" type="button">Randomize</button>
+          <button id="quickReshuffle" type="button">Reshuffle</button>
         </div>
         <section id="challengeOverlay" class="challenge-overlay" aria-label="Challenge controls">
           <div class="challenge-topbar">
@@ -1108,6 +1212,8 @@
     tabPlay: document.getElementById('tabPlay'),
     tabStory: document.getElementById('tabStory'),
     tabChallenge: document.getElementById('tabChallenge'),
+    quickRandom: document.getElementById('quickRandom'),
+    quickReshuffle: document.getElementById('quickReshuffle'),
     resetControls: document.getElementById('resetControls'),
     challengeOverlay: document.getElementById('challengeOverlay'),
     challengeStop: document.getElementById('challengeStop'),
@@ -1283,13 +1389,21 @@
   }
 
   function updatePanelScrollLimits() {
-    if (!el.widget) return;
-    const rect = el.widget.getBoundingClientRect();
-    const available = Math.max(140, rect.height - 110);
-    const leftContent = document.getElementById('controlsSidebarContent');
-    const rightContent = document.getElementById('networkSidebarContent');
-    if (leftContent) leftContent.style.maxHeight = `${available}px`;
-    if (rightContent) rightContent.style.maxHeight = `${available}px`;
+    if (!el.widget || window.matchMedia('(max-width: 760px)').matches) return;
+
+    const widgetRect = el.widget.getBoundingClientRect();
+    const stage = el.widget.querySelector('.network-stage');
+    const stageRect = stage ? stage.getBoundingClientRect() : widgetRect;
+    const bottomInset = 8;
+
+    for (const panel of [el.controlsSidebar, el.sidebar]) {
+      if (!panel || !panel.classList.contains('open')) continue;
+      const panelRect = panel.getBoundingClientRect();
+      const top = panelRect.top - stageRect.top;
+      const available = Math.max(140, stageRect.height - top - bottomInset);
+      panel.style.height = `${available}px`;
+      panel.style.maxHeight = 'none';
+    }
   }
 
   function fitWidgetToViewportOnLoad() {
@@ -4488,7 +4602,7 @@
   function setTabState(tab){ for(const b of [el.tabPlay,el.tabStory,el.tabChallenge]){const a=b===tab;b.classList.toggle('active',a);b.setAttribute('aria-selected',String(a));} }
   function enterChallengeMode(){ leaveStoryMode(); state.challengeMode=true; el.widget.classList.add('challenge-mode'); el.challengeOverlay.classList.add('open'); setTabState(el.tabChallenge); el.tabChallenge.classList.add('challenge-tab-active','active'); resetControlsToDefaults(true); stopChallengeTimer(true); }
   function leaveChallengeMode(){ state.challengeMode=false; el.widget.classList.remove('challenge-mode','challenge-running'); el.challengeOverlay.classList.remove('open','compact'); el.tabChallenge.classList.remove('challenge-tab-active'); stopChallengeTimer(true); }
-  function collapseSidePanels(){el.controlsSidebar.classList.remove('open');el.controlsSidebarTab.setAttribute('aria-expanded','false');el.sidebar.classList.remove('open');el.sidebarTab.setAttribute('aria-expanded','false');el.sidebar.style.width='32px';}
+  function collapseSidePanels(){el.controlsSidebar.classList.remove('open');el.controlsSidebarTab.setAttribute('aria-expanded','false');el.sidebar.classList.remove('open');el.sidebarTab.setAttribute('aria-expanded','false');el.sidebar.style.width='32px';el.controlsSidebar.style.height='';el.sidebar.style.height='';}
   function enterStoryMode(){leaveChallengeMode();state.storyMode=true;state.storySlideWindowMoved=false;el.widget.classList.add('story-mode');el.storyOverlay.classList.add('open');el.storySlideWindow.classList.add('open');setTabState(el.tabStory);el.tabStory.classList.add('story-tab-active','active');resetControlsToDefaults(true);collapseSidePanels();renderStoryNavigation();requestAnimationFrame(()=>positionStorySlideWindow(true));}
   function leaveStoryMode(){state.storyMode=false;el.widget.classList.remove('story-mode');el.storyOverlay.classList.remove('open');el.storySlideWindow.classList.remove('open');el.tabStory.classList.remove('story-tab-active');}
 
@@ -4528,6 +4642,13 @@
   el.butterfly.addEventListener('click', () => startLayout('butterfly'));
   el.omega.addEventListener('click', () => startLayout('omega'));
   el.rnetwork.addEventListener('click', () => startLayout('rnetwork'));
+  const panelResizeObserver = new ResizeObserver(() => {
+    requestAnimationFrame(updatePanelScrollLimits);
+  });
+  panelResizeObserver.observe(el.widget);
+  const observedStage = el.widget.querySelector('.network-stage');
+  if (observedStage) panelResizeObserver.observe(observedStage);
+
   let widgetResizeDrag = null;
 
   el.widgetResizeHandle.addEventListener('pointerdown', event => {
@@ -4625,6 +4746,7 @@
     const open = !el.controlsSidebar.classList.contains('open');
     el.controlsSidebar.classList.toggle('open', open);
     el.controlsSidebarTab.setAttribute('aria-expanded', String(open));
+    if (!open) el.controlsSidebar.style.height = '';
     updatePanelScrollLimits();
   });
 
@@ -4641,6 +4763,7 @@
       renderMiniDiagrams();
     } else {
       el.sidebar.style.width = '32px';
+      el.sidebar.style.height = '';
     }
     updatePanelScrollLimits();
   });
@@ -4658,7 +4781,9 @@
   el.inputsAll0.addEventListener('click', () => setInputPattern('all0'));
   el.inputsAlternating.addEventListener('click', () => setInputPattern('alternating'));
   el.inputsRandom.addEventListener('click', () => setInputPattern('random'));
+  el.quickRandom.addEventListener('click', () => setInputPattern('random'));
   el.inputsReshuffle.addEventListener('click', reshuffleInputs);
+  el.quickReshuffle.addEventListener('click', reshuffleInputs);
   el.toggleAllInputs.addEventListener('click', toggleAllInputs);
   el.setSwitches.addEventListener('click', setSwitchesOnce);
   el.resetSwitches.addEventListener('click', () => setAllSwitches('reset'));
