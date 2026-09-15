@@ -16,13 +16,13 @@
 ######################################
 # Formal Proofs with SymbiYosys
 
-formal: prove_bmcf/PASS prove_bmicf/PASS prove_bmgf/PASS prove_bmsf/PASS prove_bmext/PASS prove_bmdep/PASS prove_hilewitz/PASS
+formal: prove_bmcf/PASS prove_bmic/PASS prove_bmgf/PASS prove_bmsf/PASS prove_bmext/PASS prove_bmdep/PASS prove_hilewitz/PASS
 
 prove_bmcf/PASS: bmcf.v bmgf.v
 	sby -f prove_bmcf.sby
 
-prove_bmicf/PASS: bmicf.v bmsf.v
-	sby -f prove_bmicf.sby
+prove_bmic/PASS: bmic.v bmsf.v
+	sby -f prove_bmic.sby
 
 prove_bmgf/PASS: bmgf.v
 	sby -f prove_bmgf.sby
@@ -46,12 +46,15 @@ prove_hilewitz/PASS: hilewitz.v
 # Rebuilding checked-in files
 
 rebuild:: purge
-rebuild:: decoder-stats
+rebuild:: decoder-stats rebuild-all-sag-types-pngs
 
 rebuild-decoder-stats:
-	bash decoder_stats.sh $@
+	bash decoder_stats.sh decoder_stats.md
 
-.PHONY: rebuild rebuild-decoder-stats
+rebuild-all-sag-types-pngs:
+	bash illustrations/All-SAG-Types.sh
+
+.PHONY: rebuild rebuild-decoder-stats rebuild-all-sag-types-pngs
 
 
 ######################################
@@ -59,7 +62,7 @@ rebuild-decoder-stats:
 
 clean:
 	rm -rf prove_bmcf/
-	rm -rf prove_bmicf/
+	rm -rf prove_bmic/
 	rm -rf prove_bmgf/
 	rm -rf prove_bmsf/
 	rm -rf prove_bmext/
@@ -68,5 +71,7 @@ clean:
 
 purge: clean
 	rm -f decoder_stats.md
+	rm -f illustrations/All-SAG-Types-Landscape.png
+	rm -f illustrations/All-SAG-Types-Portrait.png
 
 .PHONY: clean purge

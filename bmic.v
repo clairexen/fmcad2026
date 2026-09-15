@@ -1,4 +1,4 @@
-//  Reference implementation for the "bitmask inverse centrifuge" (BMICF) operation
+//  Reference implementation for the "bitmask inverse centrifuge" (BMIC) operation
 //
 //  Copyright (C) 2026  Claire Xenia Wolf <claire@clairexen.net>
 //
@@ -14,7 +14,7 @@
 //  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-module bmicf #(
+module bmic #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
 ) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout, cout);

@@ -11,7 +11,7 @@ smtbmc boolector
 read -noverific
 read -formal bmdep.v
 read -vlog95 bmsf.v
-prep -top bmicf
+prep -top bmic
 
 [files]
 bmdep.v

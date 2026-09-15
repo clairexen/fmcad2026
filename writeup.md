@@ -60,7 +60,7 @@ as "sheep and goats" (SAG). Knuth calls this instruction "sheep and goats". But
 it is also often referred to as "centrifuge". The Power 10 ISA contains an
 instruction named cfuged ("Centrifuge Doubleword") with this exact semantic.
 Going forward I'm calling this instruction "Bit-Mask-Centrifuge" or
-"Bit-Magic-Centrifuge" (BMCF) and its inverse "inverse centrifuge" (BMICF).
+"Bit-Magic-Centrifuge" (BMCF) and its inverse "inverse centrifuge" (BMIC).
 
 In the second mental picture both the goats and the sheep approach their
 respective output areas from the mid-point between the areas. Then the sheep
@@ -107,11 +107,11 @@ semantic, not performance or style of implementation. Going forward I'm thus
 using the terms and names "extract" (BMEXT) and "deposit" (BMDEP) for an
 instruction with this semantic.
 
-| Operation | Reverse-OP | Unselected Bits |
-|:---------:|:----------:|:----------------|
-| BMCF     | BMICF      | Order preserved |
-| BMGF     | BMSF      | Order reversed  |
-| BMEXT     | BMDEP      | Cleared         |
+| SAG Type     | Name                 | Operation | Reverse-OP | Unselected Bits |
+|:-------------|:---------------------|:---------:|:----------:|:----------------|
+| Type I SAG   | (inverse) centrifuge | BMCF      | BMIC       | Order preserved |
+| Type II SAG  | gather/scatter-flip  | BMGF      | BMSF       | Order reversed  |
+| Type III SAG | extract/deposit      | BMEXT     | BMDEP      | Cleared         |
 
 I've provided Verilog reference implementations for BMGF and BMSF in
 the GitHub repository for this Key-Note presentation:
@@ -121,19 +121,19 @@ the GitHub repository for this Key-Note presentation:
 
 The same directory (https://github.com/clairexen/fmcad2026/) also contains
 simple reference implementations for the other four instructions BMEXT,
-BMDEP, BMCF, and BMICF based on BMGF and BMSF using the following equivalences:
+BMDEP, BMCF, and BMIC based on BMGF and BMSF using the following equivalences:
 
 	BMEXT(din, cin) := BMGF(din & cin, cin)
-	BMDEP(din, cin) := BMSF(din & cout, cin)         [with cout := BMSF(cin, cin)]
+	BMDEP(din, cin) := BMSF(din & cout, cin)       [with cout := BMSF(cin, cin)]
 	BMCF(din, cin) := BMGF(BMGF(din, cin), cout)   [with cout := BMGF(cin, cin)]
-	BMICF(din, cin) := BMSF(BMSF(din, cout), cin)   [with cout := BMSF(cin, cin)]
+	BMIC(din, cin) := BMSF(BMSF(din, cout), cin)   [with cout := BMSF(cin, cin)]
 
 Note that `cout = BMGF(cin, cin) = BMSF(cin, cin)` and that the Verilog
-reference implementations of BMDEP, BMCF, and BMICF do not contain an
+reference implementations of BMDEP, BMCF, and BMIC do not contain an
 additional instantiation of BMGF / BMSF to generate cout because we can
 simply use the `.cout()` output of any BMGF / BMSF instance that is
 instantiated with `cin` routed to its `.cin()` input port. We even can route
-cout anti-parallel to the data-bus, as can be seen in the BMICF reference
+cout anti-parallel to the data-bus, as can be seen in the BMIC reference
 implementation, because the `.cout()` output of the BMSF module does only
 depend on `.cin()` and not `.din()`.
 
