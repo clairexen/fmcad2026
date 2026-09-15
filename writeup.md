@@ -92,7 +92,7 @@ from christian scripture:
 
 I have illustrated the three mental pictures in this sketch:
 
-https://github.com/clairexen/fmcad2026/blob/main/illustrations/family-of-three-functions-line-art-faithful.png
+- https://github.com/clairexen/fmcad2026/blob/main/illustrations/All-SAG-Types-Landscape.png
 
 The X86 / X86\_64 ISA also contains the inverse operation with regards to the
 selected bits: "parallel deposit" (PDEP), that places the selected bits in
