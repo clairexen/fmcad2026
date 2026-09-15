@@ -14,8 +14,12 @@
 //  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-// `define BMEXT_VIA_BMGF
+`ifndef BMEXT_VIA_BMGF
+`ifndef BMEXT_VIA_SHIFT
+//`define BMEXT_VIA_BMGF
 `define BMEXT_VIA_SHIFT
+`endif
+`endif
 
 module bmext #(
 	parameter integer XLOG2 = 4,
@@ -35,8 +39,8 @@ module bmext #(
 			for (i = 1; i < XLEN; i = i+1) begin:control
 				assign st_xor[i] = !st_ci[i] ^ (st_xor[i-1] & st_msk[i-1]);
 			end
-			assign st_ct = ((st_xor & st_ci) >> 1) | (~st_xor & st_ci);
-			assign st_dt = ((st_xor & st_di) >> 1) | (~st_xor & st_di);
+			assign st_ct = (st_xor & ((st_ci >> 1) & st_msk)) | (~st_xor & st_ci);
+			assign st_dt = (st_xor & ((st_di >> 1) & st_msk)) | (~st_xor & st_di);
 			for (i = 0; i < (XLEN >> 1); i = i+1) begin:route
 				assign st_do[(XLEN >> 1) + i] = st_dt[2*i+1], st_do[i] = st_dt[2*i];
 				assign st_co[(XLEN >> 1) + i] = st_ct[2*i+1], st_co[i] = st_ct[2*i];
