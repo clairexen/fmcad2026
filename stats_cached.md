@@ -204,3 +204,21 @@ Cell counts and longest topological paths after mapping with Yosys.
 | 32 | 110% | 105% LTP | 106% | 100% LTP | 104% | 100% LTP |
 | 64 | 108% | 101% LTP | 112% | 100% LTP | 106% | 100% LTP |
 
+### Rel. area and LTP of hilewitz_decoder wrt clairexen_omega_decoder by XLEN
+
+| XLEN | CMOS transistors | CMOS LTP | LUT4 count | LUT4 LTP | LUT6 count | LUT6 LTP |
+| ---: | ---------------: | -------: | ---------: | -------: | ---------: | -------: |
+| 8 | 79% | 116% LTP | 100% | 100% LTP | 108% | 100% LTP |
+| 16 | 80% | 100% LTP | 82% | 100% LTP | 80% | 100% LTP |
+| 32 | 91% | 106% LTP | 90% | 109% LTP | 90% | 100% LTP |
+| 64 | 96% | 104% LTP | 91% | 104% LTP | 84% | 107% LTP |
+
+### Rel. area and LTP of clairexen_shift_decoder wrt clairexen_omega_decoder by XLEN
+
+| XLEN | CMOS transistors | CMOS LTP | LUT4 count | LUT4 LTP | LUT6 count | LUT6 LTP |
+| ---: | ---------------: | -------: | ---------: | -------: | ---------: | -------: |
+| 8 | 160% | 183% LTP | 214% | 200% LTP | 200% | 100% LTP |
+| 16 | 141% | 133% LTP | 156% | 133% LTP | 168% | 166% LTP |
+| 32 | 129% | 123% LTP | 136% | 118% LTP | 146% | 128% LTP |
+| 64 | 122% | 114% LTP | 143% | 113% LTP | 134% | 123% LTP |
+

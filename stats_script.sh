@@ -168,6 +168,8 @@ if [ "$1" = "render" ]; then
 		echo "## Relative area and LTP"; echo
 		print_rel_stats bmext_hilewitz bmext_omega
 		print_rel_stats bmext_shift bmext_omega
+		print_rel_stats hilewitz_decoder clairexen_omega_decoder
+		print_rel_stats clairexen_shift_decoder clairexen_omega_decoder
 	} > stats_cached.md
 	exit 0
 fi
