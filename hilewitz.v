@@ -82,8 +82,8 @@ module bmext_hilewitz #(
 	assign dout = data[XLOG2];
 endmodule
 
-// the control generator from bmgf.v
-module clairexen_bmgf_decoder #(
+// the "omega"-style control generator from bmgf.v
+module clairexen_omega_decoder #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
 ) (input [XLEN-1:0] cin, output [XLOG2*XLEN/2-1:0] ctrl);
@@ -114,8 +114,8 @@ module clairexen_bmgf_decoder #(
 	assign stage[0].st_msk = (1 << (XLEN-1)) - 1;
 endmodule
 
-// the control generator from bmext.v
-module clairexen_bmext_decoder #(
+// the "shift"-style control generator from bmext.v
+module clairexen_shift_decoder #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
 ) (input [XLEN-1:0] cin, output [XLOG2*XLEN-1:0] ctrl);

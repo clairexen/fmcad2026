@@ -6,7 +6,7 @@ dump_rtlil=false
 
 xlens=(8 16 32 64)
 targets=(cmos lut4 lut6)
-decoder_designs=(hilewitz_decoder clairexen_{bmgf,bmext}_decoder)
+decoder_designs=(hilewitz_decoder clairexen_{omega,shift}_decoder)
 # bmfunc_designs=(bm{cf,ic,gf,sf,ext,dep} bmext_{omega,shift,hilewitz})
 bmfunc_designs=(bm{gf,sf,ext,dep} bmext_{omega,shift,hilewitz})
 designs=("${decoder_designs[@]}" "${bmfunc_designs[@]}")

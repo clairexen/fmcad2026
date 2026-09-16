@@ -13,7 +13,7 @@ Cell counts and longest topological paths after mapping with Yosys.
 | 32 | 1844 | 32 LTP | 157 | 12 LTP | 135 | 7 LTP |
 | 64 | 5276 | 65 LTP | 428 | 23 LTP | 365 | 14 LTP |
 
-### `clairexen_bmgf_decoder`
+### `clairexen_omega_decoder`
 
 | XLEN | CMOS transistors | CMOS LTP | LUT4 count | LUT4 LTP | LUT6 count | LUT6 LTP |
 | ---: | ---------------: | -------: | ---------: | -------: | ---------: | -------: |
@@ -22,7 +22,7 @@ Cell counts and longest topological paths after mapping with Yosys.
 | 32 | 2008 | 30 LTP | 173 | 11 LTP | 150 | 7 LTP |
 | 64 | 5482 | 62 LTP | 468 | 22 LTP | 434 | 13 LTP |
 
-### `clairexen_bmext_decoder`
+### `clairexen_shift_decoder`
 
 | XLEN | CMOS transistors | CMOS LTP | LUT4 count | LUT4 LTP | LUT6 count | LUT6 LTP |
 | ---: | ---------------: | -------: | ---------: | -------: | ---------: | -------: |
@@ -38,32 +38,32 @@ Cell counts and longest topological paths after mapping with Yosys.
 | Design | CMOS transistors | CMOS LTP | LUT4 count | LUT4 LTP | LUT6 count | LUT6 LTP |
 | -----: | ---------------: | -------: | ---------: | -------: | ---------: | -------: |
 | hilewitz_decoder | 162 | 7 LTP | 14 | 2 LTP | 13 | 2 LTP |
-| clairexen_bmgf_decoder | 204 | 6 LTP | 14 | 2 LTP | 12 | 2 LTP |
-| clairexen_bmext_decoder | 328 | 11 LTP | 30 | 4 LTP | 24 | 2 LTP |
+| clairexen_omega_decoder | 204 | 6 LTP | 14 | 2 LTP | 12 | 2 LTP |
+| clairexen_shift_decoder | 328 | 11 LTP | 30 | 4 LTP | 24 | 2 LTP |
 
 ## `XLEN=16` (`XLOG2=4`)
 
 | Design | CMOS transistors | CMOS LTP | LUT4 count | LUT4 LTP | LUT6 count | LUT6 LTP |
 | -----: | ---------------: | -------: | ---------: | -------: | ---------: | -------: |
 | hilewitz_decoder | 562 | 15 LTP | 47 | 6 LTP | 38 | 3 LTP |
-| clairexen_bmgf_decoder | 694 | 15 LTP | 57 | 6 LTP | 47 | 3 LTP |
-| clairexen_bmext_decoder | 984 | 20 LTP | 89 | 8 LTP | 79 | 5 LTP |
+| clairexen_omega_decoder | 694 | 15 LTP | 57 | 6 LTP | 47 | 3 LTP |
+| clairexen_shift_decoder | 984 | 20 LTP | 89 | 8 LTP | 79 | 5 LTP |
 
 ## `XLEN=32` (`XLOG2=5`)
 
 | Design | CMOS transistors | CMOS LTP | LUT4 count | LUT4 LTP | LUT6 count | LUT6 LTP |
 | -----: | ---------------: | -------: | ---------: | -------: | ---------: | -------: |
 | hilewitz_decoder | 1844 | 32 LTP | 157 | 12 LTP | 135 | 7 LTP |
-| clairexen_bmgf_decoder | 2008 | 30 LTP | 173 | 11 LTP | 150 | 7 LTP |
-| clairexen_bmext_decoder | 2598 | 37 LTP | 237 | 13 LTP | 219 | 9 LTP |
+| clairexen_omega_decoder | 2008 | 30 LTP | 173 | 11 LTP | 150 | 7 LTP |
+| clairexen_shift_decoder | 2598 | 37 LTP | 237 | 13 LTP | 219 | 9 LTP |
 
 ## `XLEN=64` (`XLOG2=6`)
 
 | Design | CMOS transistors | CMOS LTP | LUT4 count | LUT4 LTP | LUT6 count | LUT6 LTP |
 | -----: | ---------------: | -------: | ---------: | -------: | ---------: | -------: |
 | hilewitz_decoder | 5276 | 65 LTP | 428 | 23 LTP | 365 | 14 LTP |
-| clairexen_bmgf_decoder | 5482 | 62 LTP | 468 | 22 LTP | 434 | 13 LTP |
-| clairexen_bmext_decoder | 6692 | 71 LTP | 670 | 25 LTP | 583 | 16 LTP |
+| clairexen_omega_decoder | 5482 | 62 LTP | 468 | 22 LTP | 434 | 13 LTP |
+| clairexen_shift_decoder | 6692 | 71 LTP | 670 | 25 LTP | 583 | 16 LTP |
 
 # BM*-Func post-synthesis statistics
 
