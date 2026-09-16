@@ -54,6 +54,10 @@ rebuild-decoder-stats:
 rebuild-all-sag-types-pngs:
 	bash illustrations/All-SAG-Types.sh
 
+rebuild-stats:
+	bash stats_script.sh mkrules
+	$(MAKE) -f stats_script.mk
+
 .PHONY: rebuild rebuild-decoder-stats rebuild-all-sag-types-pngs
 
 
@@ -68,10 +72,14 @@ clean:
 	rm -rf prove_bmext/
 	rm -rf prove_bmdep/
 	rm -rf prove_hilewitz/
+	rm -rf stats_cached/
+	rm -rf stats_script.mk
 
 purge: clean
-	rm -f decoder_stats.md
-	rm -f illustrations/All-SAG-Types-Landscape.png
-	rm -f illustrations/All-SAG-Types-Portrait.png
+	rm -rf stats_cached.md
+	rm -rf stats_cached.dat
+	rm -rf decoder_stats.md
+	rm -rf illustrations/All-SAG-Types-Landscape.png
+	rm -rf illustrations/All-SAG-Types-Portrait.png
 
 .PHONY: clean purge

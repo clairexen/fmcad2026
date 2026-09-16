@@ -5,5 +5,7 @@
 /prove_bmext/
 /prove_bmdep/
 /prove_hilewitz/
+/stats_script.mk
+/stats_cached/
 /tmp/
 .*.swp
