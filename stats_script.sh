@@ -43,15 +43,89 @@ if [ "$1" = "mkrules" ]; then
 fi
 
 if [ "$1" = "render" ]; then
-	rm -f stats_cached.md
-	echo FIXME
-	exit 1
+	declare -A stats
+	while read -r design xlen target metric value extra; do
+		if [ -z "${design:-}" ] || [ -n "${extra:-}" ]; then
+			echo "malformed row in stats_cached.dat" >&2; exit 1
+		fi
+		key="${design}_${xlen}_${target}_${metric}"
+		if [ -n "${stats[$key]+set}" ]; then
+			echo "duplicate statistic in stats_cached.dat: $key" >&2; exit 1
+		fi
+		stats[$key]=$value
+	done < stats_cached.dat
+	{
+		print_stats() {
+			echo "# $1 synthesis statistics"; echo
+			echo "## $1 synthesis statistics by design and XLEN"; echo
+			for design in $2; do
+				echo "### \`$design\`"; echo
+				echo '| XLEN | CMOS transistors | CMOS LTP | LUT4 count | LUT4 LTP | LUT6 count | LUT6 LTP |'
+				echo '| ---: | ---------------: | -------: | ---------: | -------: | ---------: | -------: |'
+				for xlen in "${xlens[@]}"; do
+					keys=("${design}_${xlen}_cmos_transistors" "${design}_${xlen}_cmos_ltp"
+						"${design}_${xlen}_lut4_lut4" "${design}_${xlen}_lut4_ltp"
+						"${design}_${xlen}_lut6_lut6" "${design}_${xlen}_lut6_ltp")
+					for key in "${keys[@]}"; do
+						if [ -z "${stats[$key]+set}" ]; then
+							echo "missing statistic in stats_cached.dat: $key" >&2; exit 1
+						fi
+					done
+					printf '| %d | %s | %s | %s | %s | %s | %s |\n' "$xlen" \
+						"${stats[${keys[0]}]}" "${stats[${keys[1]}]}" \
+						"${stats[${keys[2]}]}" "${stats[${keys[3]}]}" \
+						"${stats[${keys[4]}]}" "${stats[${keys[5]}]}"
+				done; echo
+			done
+
+			echo "## $1 synthesis statistics by XLEN and design"; echo
+			for xlen in "${xlens[@]}"; do
+				case "$xlen" in
+					8)  xlog2=3 ;;
+					16) xlog2=4 ;;
+					32) xlog2=5 ;;
+					64) xlog2=6 ;;
+					*) echo error >&2; exit 1
+				esac
+				echo "## \`XLEN=$xlen\` (\`XLOG2=$xlog2\`)"; echo
+				echo '| Design | CMOS transistors | CMOS LTP | LUT4 count | LUT4 LTP | LUT6 count | LUT6 LTP |'
+				echo '| -----: | ---------------: | -------: | ---------: | -------: | ---------: | -------: |'
+				for design in "${designs[@]}"; do
+					keys=("${design}_${xlen}_cmos_transistors" "${design}_${xlen}_cmos_ltp"
+						"${design}_${xlen}_lut4_lut4" "${design}_${xlen}_lut4_ltp"
+						"${design}_${xlen}_lut6_lut6" "${design}_${xlen}_lut6_ltp")
+					for key in "${keys[@]}"; do
+						if [ -z "${stats[$key]+set}" ]; then
+							echo "missing statistic in stats_cached.dat: $key" >&2; exit 1
+						fi
+					done
+					printf '| %s | %s | %s | %s | %s | %s | %s |\n' "$design" \
+						"${stats[${keys[0]}]}" "${stats[${keys[1]}]}" \
+						"${stats[${keys[2]}]}" "${stats[${keys[3]}]}" \
+						"${stats[${keys[4]}]}" "${stats[${keys[5]}]}"
+				done; echo
+			done
+		}
+		echo "Cell counts and longest topological paths after mapping with Yosys."; echo
+		print_stats "Decoder" hilewitz_decoder clairexen_{bmgf,bmext}_decoder
+	} > stats_cached.md
+	exit 0
 fi
 
 if [ "$1" = "collect" ]; then
-	rm -f stats_cached.dat
-	echo FIXME
-	exit 1
+	: > stats_cached.dat
+	for xlen in "${xlens[@]}"; do
+	for target in "${targets[@]}"; do
+	for design in "${designs[@]}"; do
+		datfile="stats_cached/${design}_${xlen}_${target}.dat"
+		while read -r metric value extra; do
+			if [ -z "${metric:-}" ] || [ -z "${value:-}" ] || [ -n "${extra:-}" ]; then
+				echo "malformed statistic in $datfile" >&2; exit 1
+			fi
+			printf '%s %s %s %s %s\n' "$design" "$xlen" "$target" "$metric" "$value"
+		done < "$datfile"
+	done; done; done > stats_cached.dat
+	exit 0
 fi
 
 if [ "$1" != "extract" -a "$1" != "run" ]; then
