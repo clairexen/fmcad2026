@@ -143,6 +143,40 @@ The six Verilog modules also contain formal safety properties for the expected
 semantic for each of the bit-manipulation instructions and the repository contains
 `*.sby` files for checking those formal properties with SymbiYosys (https://github.com/YosysHQ/sby).
 
+Definitions, conventions, theory, and theorems
+----------------------------------------------
+
+We are looking at vectors of N=2^n bits, traversing an n-layers unique-path
+switching network.  We index the bits from 0 (LSB) to N-1 (MSB) and these N
+indices are n-bit numbers.
+
+We visualize the vector as horizontal sequence of elements with the MSB end on
+the left and the LSB end on the right. We visualize data-flow through the
+n-layer switching network from inputs at the top to outputs at the bottom.
+
+The butterfly network, omega network, and baseline network are all just
+different drawings of the same circuit, that routes the N signals through n
+layers of N/2 2x2-switches in each layer. These 2x2-switches and the N inputs
+and N outputs are connected in a way so that the switches in the first layer
+determine the bit n-1, the MSB bit, of the signals output-port index, the
+switches in the second layer determine the bit n-2 the output index, and so
+forth. There is only one way to construct such an n-layer switching circuit, if
+we only label the inputs and outputs but don't label the switches. By assigning
+labels to the switches, such as a horizontal position within their layer, we
+arrive at these different visualizations of the same circuit.
+
+The reverse butterfly network, reverse omega network, and R-network are the
+circuit we get if we reverse the direction of data flow in the circuit
+discussed in the previous paragraph. This circuit is also self-routing, but
+the first layer of the network determines the bit 0, the LSB bit, of the
+signals output index, and so forth. The circuit from the previous circuit and
+this circuit are only different in the labels for the input and output ports.
+Applying bit-reflection to the n-bit input and output port indices transforms
+one of these two circuits into the other.
+
+...
+
+
 Prior art and a peculiar patent
 -------------------------------
 
