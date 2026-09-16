@@ -4,8 +4,7 @@ set -euo pipefail
 
 dump_rtlil=false
 
-xlens=(8)
-# xlens=(8 16 32 64)
+xlens=(8 16 32 64)
 targets=(cmos lut4 lut6)
 designs=(hilewitz_decoder clairexen_{bmgf,bmext}_decoder)
 
