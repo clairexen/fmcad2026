@@ -17,9 +17,9 @@
 module bmic #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
-) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout, cout);
+) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout);
 	wire [XLEN-1:0] dt, ct; // note that ct is wired anti-parallel to dt
-	bmsf #(XLOG2, XLEN) pass_1 (din, ct, dt, cout);
+	bmsf #(XLOG2, XLEN) pass_1 (din, ct, dt, );
 	bmsf #(XLOG2, XLEN) pass_2 (dt, cin, dout, ct);
 
 `ifdef FORMAL

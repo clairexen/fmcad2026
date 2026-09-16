@@ -51,6 +51,37 @@ module hilewitz_decoder #(
 	endgenerate
 endmodule
 
+// Hilewitz and Lee's bmext implementation
+module bmext_hilewitz #(
+	parameter integer XLOG2 = 4,
+	parameter integer XLEN = 1 << XLOG2
+) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout);
+	wire [XLOG2*XLEN/2-1:0] ctrl;
+	wire [XLEN-1:0] data [0:XLOG2];
+
+	hilewitz_decoder #(XLOG2, XLEN) decoder (cin, ctrl);
+	assign data[0] = din & cin;
+
+	genvar n, i;
+	generate
+		for (n = 0; n < XLOG2; n = n+1) begin:stage
+			localparam integer K = 1 << n;
+			for (i = 0; i < (XLEN >> 1); i = i+1) begin:route
+				localparam integer BLOCK = i / K;
+				localparam integer POS = i % K;
+				localparam integer LO = 2*BLOCK*K + POS;
+				localparam integer HI = LO + K;
+				assign data[n+1][LO] = ctrl[n*(XLEN/2)+i] ?
+						data[n][HI] : data[n][LO];
+				assign data[n+1][HI] = ctrl[n*(XLEN/2)+i] ?
+						data[n][LO] : data[n][HI];
+			end
+		end
+	endgenerate
+
+	assign dout = data[XLOG2];
+endmodule
+
 // the control generator from bmgf.v
 module clairexen_bmgf_decoder #(
 	parameter integer XLOG2 = 4,

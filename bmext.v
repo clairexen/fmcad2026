@@ -16,17 +16,17 @@
 
 `ifndef BMEXT_VIA_BMGF
 `ifndef BMEXT_VIA_SHIFT
-//`define BMEXT_VIA_BMGF
-`define BMEXT_VIA_SHIFT
+`define BMEXT_VIA_BMGF
+//`define BMEXT_VIA_SHIFT
 `endif
 `endif
 
 module bmext #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
-) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout, cout);
+) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout);
 `ifdef BMEXT_VIA_BMGF
-	bmgf #(XLOG2, XLEN) impl (din & cin, cin, dout, cout);
+	bmgf #(XLOG2, XLEN) impl (din & cin, cin, dout, );
 `endif
 
 `ifdef BMEXT_VIA_SHIFT
@@ -38,9 +38,13 @@ module bmext #(
 			assign st_xor[0] = !st_ci[0];
 			for (i = 1; i < XLEN; i = i+1) begin:control
 				assign st_xor[i] = !st_ci[i] ^ (st_xor[i-1] & st_msk[i-1]);
+				assign st_ct[i-1] = st_xor[i-1] ? st_ci[i] & st_msk[i] : st_ci[i-1];
+				assign st_dt[i-1] = st_xor[i-1] ? st_di[i] & st_msk[i] : st_di[i-1];
 			end
-			assign st_ct = (st_xor & ((st_ci >> 1) & st_msk)) | (~st_xor & st_ci);
-			assign st_dt = (st_xor & ((st_di >> 1) & st_msk)) | (~st_xor & st_di);
+			assign st_ct[XLEN-1] = ~st_xor[XLEN-1] & st_ci[XLEN-1];
+			assign st_dt[XLEN-1] = ~st_xor[XLEN-1] & st_di[XLEN-1];
+			// assign st_ct = (st_xor & ((st_ci >> 1) & st_msk)) | (~st_xor & st_ci);
+			// assign st_dt = (st_xor & ((st_di >> 1) & st_msk)) | (~st_xor & st_di);
 			for (i = 0; i < (XLEN >> 1); i = i+1) begin:route
 				assign st_do[(XLEN >> 1) + i] = st_dt[2*i+1], st_do[i] = st_dt[2*i];
 				assign st_co[(XLEN >> 1) + i] = st_ct[2*i+1], st_co[i] = st_ct[2*i];
@@ -57,7 +61,7 @@ module bmext #(
 	assign stage[0].st_ci = cin;
 	assign stage[0].st_msk = (1 << (XLEN-1)) - 1;
 	assign dout = stage[XLOG2-1].st_do;
-	assign cout = stage[XLOG2-1].st_co;
+	// assign cout = stage[XLOG2-1].st_co;
 `endif
 
 `ifdef FORMAL

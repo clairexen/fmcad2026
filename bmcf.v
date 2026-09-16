@@ -17,10 +17,10 @@
 module bmcf #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
-) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout, cout);
+) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout);
 	wire [XLEN-1:0] dt, ct;
 	bmgf #(XLOG2, XLEN) pass_1 (din, cin, dt, ct);
-	bmgf #(XLOG2, XLEN) pass_2 (dt, ct, dout, cout);
+	bmgf #(XLOG2, XLEN) pass_2 (dt, ct, dout, );
 
 `ifdef FORMAL
 	integer k, cnt1, cnt0;

@@ -17,7 +17,12 @@
 module bmgf #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
+`ifdef BMGF_WITH_COUT
 ) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout, cout);
+`else
+) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout);
+	wire [XLEN-1:0] cout;
+`endif
 	genvar n, i;
 
 	generate

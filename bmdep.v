@@ -17,8 +17,10 @@
 module bmdep #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
-) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout, cout);
-	bmsf #(XLOG2, XLEN) impl (din & cout, cin, dout, cout);
+) (input [XLEN-1:0] din, cin, output [XLEN-1:0] dout);
+	wire [XLEN-1:0] dtmp;
+	bmsf #(XLOG2, XLEN) impl (din, cin, dtmp, );
+	assign dout = dtmp & cin;
 
 `ifdef FORMAL
 	integer k, cnt1, cnt0;

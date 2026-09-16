@@ -6,15 +6,32 @@ dump_rtlil=false
 
 xlens=(8 16 32 64)
 targets=(cmos lut4 lut6)
-designs=(hilewitz_decoder clairexen_{bmgf,bmext}_decoder)
+decoder_designs=(hilewitz_decoder clairexen_{bmgf,bmext}_decoder)
+# bmfunc_designs=(bm{cf,ic,gf,sf,ext,dep} bmext_{omega,shift,hilewitz})
+bmfunc_designs=(bm{gf,sf,ext,dep} bmext_{omega,shift,hilewitz})
+designs=("${decoder_designs[@]}" "${bmfunc_designs[@]}")
 
 getdeps() {
 	case "$1" in
-		hilewitz_decoder|clairexen_*_decoder)
-			echo "hilewitz.v"
+		hilewitz_*|clairexen_*_decoder|bmext_hilewitz)
+			echo hilewitz.v
+			;;
+		bmcf|bmic|bmgf|bmsf|bmext|bmdep)
+			echo $1.v
+			case "$1" in
+				bmcf|bmext) echo bmgf.v ;;
+				bmic|bmdep) echo bmsf.v ;;
+			esac
+			;;
+		bmext_omega)
+			echo bmext.v
+			echo bmgf.v
+			;;
+		bmext_shift)
+			echo bmext.v
 			;;
 		*)
-			echo "unknown design: $1"
+			echo "unknown design (getdeps): $1"
 			exit 1
 	esac
 }
@@ -90,7 +107,7 @@ if [ "$1" = "render" ]; then
 				echo "## \`XLEN=$xlen\` (\`XLOG2=$xlog2\`)"; echo
 				echo '| Design | CMOS transistors | CMOS LTP | LUT4 count | LUT4 LTP | LUT6 count | LUT6 LTP |'
 				echo '| -----: | ---------------: | -------: | ---------: | -------: | ---------: | -------: |'
-				for design in "${designs[@]}"; do
+				for design in $2; do
 					keys=("${design}_${xlen}_cmos_transistors" "${design}_${xlen}_cmos_ltp"
 						"${design}_${xlen}_lut4_lut4" "${design}_${xlen}_lut4_ltp"
 						"${design}_${xlen}_lut6_lut6" "${design}_${xlen}_lut6_ltp")
@@ -107,7 +124,8 @@ if [ "$1" = "render" ]; then
 			done
 		}
 		echo "Cell counts and longest topological paths after mapping with Yosys."; echo
-		print_stats "Decoder" hilewitz_decoder clairexen_{bmgf,bmext}_decoder
+		print_stats "Decoder" "${decoder_designs[*]}"
+		print_stats "BM*-Func" "${bmfunc_designs[*]}"
 	} > stats_cached.md
 	exit 0
 fi
@@ -172,13 +190,33 @@ ys() { yosys_script="$yosys_script
 $*"; }
 
 case "$design" in
-	hilewitz_decoder|clairexen_*_decoder)
+	hilewitz_*|clairexen_*_decoder|bmext_hilewitz)
 		ys read_verilog hilewitz.v
 		ys chparam -set XLOG2 $xlog2 $design
-		ys synth -top $design
+		ys synth -flatten -top $design
+		;;
+	bmcf|bmic|bmgf|bmsf|bmext|bmdep)
+		ys read_verilog $design.v
+		case "$design" in
+			bmcf|bmext) ys read_verilog -D BMGF_WITH_COUT bmgf.v ;;
+			bmic|bmdep) ys read_verilog -D BMSF_WITH_COUT bmsf.v ;;
+		esac
+		ys chparam -set XLOG2 $xlog2 $design
+		ys synth -flatten -top $design
+		;;
+	bmext_omega)
+		ys read_verilog -D BMEXT_VIA_BMGF bmext.v
+		ys read_verilog -D BMGF_WITH_COUT bmgf.v
+		ys chparam -set XLOG2 $xlog2 bmext
+		ys synth -flatten -top bmext
+		;;
+	bmext_shift)
+		ys read_verilog -D BMEXT_VIA_SHIFT bmext.v
+		ys chparam -set XLOG2 $xlog2 bmext
+		ys synth -top bmext
 		;;
 	*)
-		echo "unknown design: $design"
+		echo "unknown design (ys script): $design"
 		exit 1
 esac
 
