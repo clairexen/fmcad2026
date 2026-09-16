@@ -2,8 +2,7 @@
 
 set -euo pipefail
 
-# for debugging
-dump_rtlil=true
+dump_rtlil=false
 
 xlens=(8)
 # xlens=(8 16 32 64)
@@ -78,14 +77,20 @@ logfile="stats_cached/${design}_${xlen}_${target}.log"
 datfile="stats_cached/${design}_${xlen}_${target}.dat"
 
 if [ "$1" = "extract" ]; then
-	case $mapping in
-		cmos)
-			awk '/Estimated number of transistors:/ { value=$NF } END { if (value == "") exit 1; print value }' $logfile
-			;;
-		lut4|lut6)
-			awk '$1 == "$lut" { value=$2 } END { if (value == "") exit 1; print value }' $logfile
-			;;
-	esac > $datfile
+	{
+		case "$target" in
+			cmos)
+				awk '/Estimated number of transistors:/ { value=$NF }
+						END { if (value == "") exit 1; print "transistors", value }' $logfile
+				;;
+			lut4|lut6)
+				awk '$1 == "$lut" { value=$2 }
+						END { if (value == "") exit 1; print "'$target'", value }' $logfile
+				;;
+		esac
+		awk '/Longest topological path in/ { sub(".*=", ""); sub(").*", ""); value=$0 }
+				END { if (value == "") exit 1; print "ltp", value }' $logfile
+	}> $datfile
 	exit 0
 fi
 
