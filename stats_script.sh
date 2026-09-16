@@ -38,9 +38,9 @@ getdeps() {
 
 if [ "$1" = "mkrules" ]; then
 	{
-		echo "stats_cached.md: stats_cached.dat"
+		echo "stats_cached.md: stats_script.sh stats_cached.dat"
 		echo "	bash stats_script.sh render"; echo
-		echo -n "stats_cached.dat:"
+		echo -n "stats_cached.dat: stats_script.sh"
 		for w in "${xlens[@]}"; do
 		for t in "${targets[@]}"; do
 		for d in "${designs[@]}"; do
@@ -73,8 +73,8 @@ if [ "$1" = "render" ]; then
 	done < stats_cached.dat
 	{
 		print_stats() {
-			echo "# $1 synthesis statistics"; echo
-			echo "## $1 synthesis statistics by design and XLEN"; echo
+			echo "# $1 post-synthesis statistics"; echo
+			echo "## $1 post-synthesis statistics by design and XLEN"; echo
 			for design in $2; do
 				echo "### \`$design\`"; echo
 				echo '| XLEN | CMOS transistors | CMOS LTP | LUT4 count | LUT4 LTP | LUT6 count | LUT6 LTP |'
@@ -88,14 +88,14 @@ if [ "$1" = "render" ]; then
 							echo "missing statistic in stats_cached.dat: $key" >&2; exit 1
 						fi
 					done
-					printf '| %d | %s | %s | %s | %s | %s | %s |\n' "$xlen" \
+					printf '| %d | %s | %s LTP | %s | %s LTP | %s | %s LTP |\n' "$xlen" \
 						"${stats[${keys[0]}]}" "${stats[${keys[1]}]}" \
 						"${stats[${keys[2]}]}" "${stats[${keys[3]}]}" \
 						"${stats[${keys[4]}]}" "${stats[${keys[5]}]}"
 				done; echo
 			done
 
-			echo "## $1 synthesis statistics by XLEN and design"; echo
+			echo "## $1 post-synthesis statistics by XLEN and design"; echo
 			for xlen in "${xlens[@]}"; do
 				case "$xlen" in
 					8)  xlog2=3 ;;
@@ -116,16 +116,58 @@ if [ "$1" = "render" ]; then
 							echo "missing statistic in stats_cached.dat: $key" >&2; exit 1
 						fi
 					done
-					printf '| %s | %s | %s | %s | %s | %s | %s |\n' "$design" \
+					printf '| %s | %s | %s LTP | %s | %s LTP | %s | %s LTP |\n' "$design" \
 						"${stats[${keys[0]}]}" "${stats[${keys[1]}]}" \
 						"${stats[${keys[2]}]}" "${stats[${keys[3]}]}" \
 						"${stats[${keys[4]}]}" "${stats[${keys[5]}]}"
 				done; echo
 			done
 		}
+
 		echo "Cell counts and longest topological paths after mapping with Yosys."; echo
 		print_stats "Decoder" "${decoder_designs[*]}"
 		print_stats "BM*-Func" "${bmfunc_designs[*]}"
+
+		print_rel_stats() {
+			echo "### Rel. area and LTP of $1 wrt $2 by XLEN"; echo
+			echo '| XLEN | CMOS transistors | CMOS LTP | LUT4 count | LUT4 LTP | LUT6 count | LUT6 LTP |'
+			echo '| ---: | ---------------: | -------: | ---------: | -------: | ---------: | -------: |'
+			for xlen in "${xlens[@]}"; do
+				first=true
+				for design in $2 $1; do
+					keys=("${design}_${xlen}_cmos_transistors" "${design}_${xlen}_cmos_ltp"
+						"${design}_${xlen}_lut4_lut4" "${design}_${xlen}_lut4_ltp"
+						"${design}_${xlen}_lut6_lut6" "${design}_${xlen}_lut6_ltp")
+					for key in "${keys[@]}"; do
+						if [ -z "${stats[$key]+set}" ]; then
+							echo "missing statistic in stats_cached.dat: $key" >&2; exit 1
+						fi
+					done
+					if $first; then
+						ref_0="${stats[${keys[0]}]}"
+						ref_1="${stats[${keys[1]}]}"
+						ref_2="${stats[${keys[2]}]}"
+						ref_3="${stats[${keys[3]}]}"
+						ref_4="${stats[${keys[4]}]}"
+						ref_5="${stats[${keys[5]}]}"
+						first=false
+						continue
+					fi
+					printf '| %d | %s | %s LTP | %s | %s LTP | %s | %s LTP |\n' "$xlen" \
+						"`echo 100*${stats[${keys[0]}]}/$ref_0 | bc`%" \
+						"`echo 100*${stats[${keys[1]}]}/$ref_1 | bc`%" \
+						"`echo 100*${stats[${keys[2]}]}/$ref_2 | bc`%" \
+						"`echo 100*${stats[${keys[3]}]}/$ref_3 | bc`%" \
+						"`echo 100*${stats[${keys[4]}]}/$ref_4 | bc`%" \
+						"`echo 100*${stats[${keys[5]}]}/$ref_5 | bc`%"
+				done
+			done; echo
+		}
+
+		echo "# Additional post-synthesis statistics"; echo
+		echo "## Relative area and LTP"; echo
+		print_rel_stats bmext_hilewitz bmext_omega
+		print_rel_stats bmext_shift bmext_omega
 	} > stats_cached.md
 	exit 0
 fi
