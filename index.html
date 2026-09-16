@@ -218,6 +218,22 @@ input.shuffle-inline-input { position:absolute; z-index:15; min-height:0; min-wi
 
 .status { display:flex !important; align-items:center; gap:12px; }
 .status-fmcad { margin-left:auto; white-space:nowrap; }
+
+.status.status-two-lines {
+  display:grid !important;
+  grid-template-columns:1fr;
+  gap:2px;
+}
+.status.status-two-lines .status-fmcad {
+  grid-row:1;
+  justify-self:end;
+  margin-left:0;
+}
+.status.status-two-lines #statusText {
+  grid-row:2;
+  justify-self:start;
+}
+
 </style>
 </head>
 <body>
@@ -2777,6 +2793,29 @@ function updateModeTerminology() {
     el.miniOmegaTitle.textContent = scatter ? 'Omega' : 'Reverse Omega';
     el.miniRNetworkTitle.textContent = scatter ? 'Baseline' : 'R-Network';
 }
+function updateStatusLayout() {
+    const status = el.status;
+    if (!status || !el.statusText) return;
+    const link = status.querySelector('.status-fmcad');
+    if (!link) return;
+
+    // Measure the natural single-line widths independently of the current
+    // flex/grid layout; flex shrinking must not make an overfull line appear
+    // to fit.
+    const style = getComputedStyle(status);
+    const innerWidth = status.clientWidth - parseFloat(style.paddingLeft || 0) - parseFloat(style.paddingRight || 0);
+    const gap = parseFloat(style.columnGap || style.gap || 0);
+    const measure = node => {
+        const clone = node.cloneNode(true);
+        clone.style.cssText = 'position:absolute;visibility:hidden;width:max-content;max-width:none;white-space:nowrap;display:block;';
+        document.body.appendChild(clone);
+        const width = clone.getBoundingClientRect().width;
+        clone.remove();
+        return width;
+    };
+    const needed = measure(el.statusText) + measure(link) + gap;
+    status.classList.toggle('status-two-lines', needed > innerWidth + 0.5);
+}
 function updateStatus() {
     updateModeTerminology();
     const names = isScatterMode()
@@ -2792,6 +2831,7 @@ function updateStatus() {
     const text = fields.join('  ·  ');
     if (el.statusText.textContent !== text)
         el.statusText.textContent = text;
+    updateStatusLayout();
 }
 
 
@@ -3670,6 +3710,10 @@ on(el.qrOpen, 'click', () => setQrOpen(true));
 on(el.qrClose, 'click', () => setQrOpen(false));
 on(el.qrOverlay, 'click', event => { if (event.target === el.qrOverlay) setQrOpen(false); });
 on(document, 'keydown', event => { if (event.key === 'Escape' && !el.qrOverlay.hidden) setQrOpen(false); });
+
+const statusLayoutObserver = new ResizeObserver(() => updateStatusLayout());
+statusLayoutObserver.observe(el.status);
+if (el.widget) statusLayoutObserver.observe(el.widget);
 
 function setupConsole() {
     state.consoleEnabled = QUERY.get('console') === '1';
