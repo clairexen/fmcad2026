@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Reverse Network Widget</title>
+<title>FMCAD 2026 Key-Note : The Parable of the Square-Dancing Witches and Wizards</title>
 <style>
 /* Application chrome. One desktop definition per component; mobile overrides
    are kept together at the end rather than scattered through the cascade. */
@@ -196,13 +196,35 @@ input.shuffle-inline-input { position:absolute; z-index:15; min-height:0; min-wi
   .widget-resize-handle { display:none; }
 }
 \n\n.canvas-tab[hidden] { display:none !important; }\n.command-console { width:min(1560px,calc(100% - 36px)); margin:10px auto 18px; border:1px solid var(--border); border-radius:10px; background:var(--paper); color:var(--ink); overflow:hidden; box-shadow:0 3px 14px rgb(31 45 70 / .08); }\n.command-console[hidden] { display:none !important; }\n.console-title { padding:8px 11px; background:var(--panel); border-bottom:1px solid var(--border); font-weight:800; }\n.console-lines { max-height:240px; overflow:auto; padding:6px 0; font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }\n.console-line { display:flex; align-items:flex-start; gap:6px; padding:3px 9px; cursor:pointer; white-space:pre-wrap; overflow-wrap:anywhere; }\n.console-line:hover { background:#f3f6fa; }\n.console-copy { flex:0 0 auto; width:22px; min-width:22px; height:22px; min-height:22px; padding:0; border:0; background:transparent; color:#637083; font-size:13px; cursor:pointer; }\n.console-line.error { color:#9b2637; background:#fff6f7; cursor:default; }\n.console-form { display:grid; grid-template-columns:auto 1fr auto; gap:7px; align-items:center; padding:8px 9px; border-top:1px solid var(--border); background:#fbfcfe; }\n.console-form label { font-size:12px; font-weight:800; }\n.console-form input { width:100%; min-width:0; font:13px/1.3 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }\n.console-help { padding:10px 12px 14px; border-top:1px solid var(--border); }\n.console-help h3 { margin:0 0 8px; font-size:13px; }\n.console-command-list { display:grid; grid-template-columns:max-content 1fr; gap:4px 10px; font-size:12px; }\n.console-command-list code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:#263246; }\n@media (max-width:760px) { .command-console { width:100%; margin:0; border-left:0; border-right:0; border-radius:0; } .console-command-list { grid-template-columns:1fr; gap:2px; } .console-form { grid-template-columns:1fr auto; } .console-form label { grid-column:1/-1; } }\n
+
+.status { display:flex; align-items:center; gap:12px; }
+.status-fmcad { margin-left:auto; white-space:nowrap; }
+.status-link { color:inherit; text-decoration:none; }
+.status-link:hover { color:#245f8a; text-decoration:underline; }
+.status-qr { min-height:0; padding:0; border:0; background:transparent; color:#245f8a; font:inherit; cursor:pointer; }
+.status-qr:hover { text-decoration:underline; }
+.qr-overlay { position:absolute; inset:0; z-index:40; display:flex; align-items:center; justify-content:center; padding:24px; background:rgb(238 242 247 / .76); backdrop-filter:blur(2px); }
+.qr-overlay[hidden] { display:none !important; }
+.qr-dialog { position:relative; display:flex; flex-direction:column; align-items:center; gap:14px; max-width:min(92%,560px); padding:24px; border:1px solid #aeb8c8; border-radius:10px; background:#fff; box-shadow:0 12px 40px rgb(31 45 70 / .22); }
+.qr-close { position:absolute; top:7px; right:9px; width:32px; min-width:32px; height:32px; min-height:32px; padding:0; border:0; background:transparent; font-size:25px; line-height:1; cursor:pointer; }
+.qr-code { width:min(52vmin,390px); aspect-ratio:1; padding:8px; background:#fff; }
+.qr-code-svg { display:block; width:100%; height:100%; }
+.qr-dialog-link { color:#245f8a; font-size:clamp(16px,2.2vw,24px); overflow-wrap:anywhere; text-align:center; }
+
+
+.controls-sidebar .size-reset-group { display:grid; grid-template-columns:auto auto 1fr auto; align-items:center; column-gap:8px; }
+.controls-sidebar .size-reset-group .controls-reset-button { grid-column:4; margin:0; justify-self:end; font-weight:800; }
+
+
+.status { display:flex !important; align-items:center; gap:12px; }
+.status-fmcad { margin-left:auto; white-space:nowrap; }
 </style>
 </head>
 <body>
 <main class="widget" aria-label="Reverse butterfly and reverse omega network visualizer">
   <div id="widgetResizeHandle" class="widget-resize-handle" aria-label="Resize widget" title="Resize widget"></div>
 
-  <div id="status" class="status" role="status" aria-live="polite"></div>
+  <div id="status" class="status" role="status" aria-live="polite"><span id="statusText"></span><span class="status-fmcad"><a class="status-link" href="https://clairexen.github.io/fmcad2026/" target="_blank" rel="noopener noreferrer">https://clairexen.github.io/fmcad2026/</a> <button id="qrOpen" class="status-qr" type="button">[QR]</button></span></div>
   <div class="canvas-wrap">
     <div class="network-stage">
       <aside id="controlsSidebar" class="controls-sidebar open" aria-label="Widget controls">
@@ -210,9 +232,8 @@ input.shuffle-inline-input { position:absolute; z-index:15; min-height:0; min-wi
           <span>Widget Controls</span>
         </button>
         <div id="controlsSidebarContent" class="controls-sidebar-content">
-          <button id="resetControls" class="controls-reset-button" type="button">Reset</button>
   <div class="controls">
-    <div class="control-group">
+    <div class="control-group size-reset-group">
       <label class="caption" for="nSelect">Size</label>
       <select id="nSelect" aria-label="Network size">
         <option value="8" selected>N = 8</option>
@@ -220,6 +241,7 @@ input.shuffle-inline-input { position:absolute; z-index:15; min-height:0; min-wi
         <option value="32">N = 32</option>
         <option value="64">N = 64</option>
       </select>
+      <button id="resetControls" class="controls-reset-button" type="button">Reset</button>
     </div>
     <div class="control-group">
       <label class="caption" for="modeSelect">Mode</label>
@@ -241,7 +263,7 @@ input.shuffle-inline-input { position:absolute; z-index:15; min-height:0; min-wi
   </div>
 
   <div class="checks" aria-label="Display options">
-    <label><input id="autoConfig" type="checkbox"> Auto-config</label>
+    <label><input id="autoConfig" type="checkbox"> Auto-route</label>
     <label><input id="showBoxes" type="checkbox"> 2×2 switch boxes</label>
     <label><input id="showUpperCarry" type="checkbox"> LSB→MSB band</label>
     <label><input id="showLowerCarry" type="checkbox"> MSB→LSB band</label>
@@ -252,6 +274,7 @@ input.shuffle-inline-input { position:absolute; z-index:15; min-height:0; min-wi
     <label><input id="showSwitchLabels" type="checkbox"> Switch-output labels</label>
     <label><input id="showSignalShades" type="checkbox"> Signal shades</label>
     <label><input id="showSilverGreen" type="checkbox"> Silver+Green</label>
+    <label><input id="hideZeroSignals" type="checkbox"> Hide 0-signals</label>
     <label><input id="showPairArcs" type="checkbox"> Paired-switch arcs</label>
     <label><input id="moveOnArcs" type="checkbox"> Move on arcs</label>
     <label><input id="autoAlign" type="checkbox"> Auto-align</label>
@@ -287,9 +310,11 @@ input.shuffle-inline-input { position:absolute; z-index:15; min-height:0; min-wi
           <button id="tabStory" type="button" class="canvas-tab" role="tab" aria-selected="false" hidden>Story / Study</button>
           <button id="tabChallenge" type="button" class="canvas-tab" role="tab" aria-selected="false" hidden>Challenge</button>
         </div>
-        <div id="playgroundQuickActions" class="playground-quick-actions" aria-label="Playground input actions">
+        <div id="playgroundQuickActions" class="playground-quick-actions" aria-label="Playground quick actions">
           <button id="quickRandom" type="button">Randomize</button>
           <button id="quickReshuffle" type="button">Reshuffle</button>
+          <button id="quickAlign" type="button">Align</button>
+          <button id="quickRoute" type="button">Route</button>
         </div>
         <section id="challengeOverlay" class="challenge-overlay" aria-label="Challenge controls">
           <div class="challenge-topbar">
@@ -329,15 +354,15 @@ input.shuffle-inline-input { position:absolute; z-index:15; min-height:0; min-wi
       </button>
       <div id="networkSidebarContent" class="network-sidebar-content">
         <section class="mini-diagram">
-          <h3 class="mini-diagram-title">Reverse Butterfly</h3>
+          <h3 id="miniButterflyTitle" class="mini-diagram-title">Reverse Butterfly</h3>
           <div id="miniButterfly" class="mini-switch-grid" aria-label="Reverse Butterfly switch configuration"></div>
         </section>
         <section class="mini-diagram">
-          <h3 class="mini-diagram-title">Reverse Omega</h3>
+          <h3 id="miniOmegaTitle" class="mini-diagram-title">Reverse Omega</h3>
           <div id="miniOmega" class="mini-switch-grid" aria-label="Reverse Omega switch configuration"></div>
         </section>
         <section class="mini-diagram">
-          <h3 class="mini-diagram-title">R-Network</h3>
+          <h3 id="miniRNetworkTitle" class="mini-diagram-title">R-Network</h3>
           <div id="miniRNetwork" class="mini-switch-grid" aria-label="R-Network switch configuration"></div>
         </section>
         <section class="mini-diagram">
@@ -353,6 +378,14 @@ input.shuffle-inline-input { position:absolute; z-index:15; min-height:0; min-wi
     <div class="control-group labels">
       <label class="caption" for="customLabels">Signal labels</label>
       <input id="customLabels" type="text" autocomplete="off" spellcheck="false" value="A B C D E F G H I J K L M N O P Q R S T U V W X Y Z Ω Δ Σ Φ Ψ Λ Θ Γ א ל מ ש ח Ж Я Ф Д Щ ش ع ق ن م あ か シ ネ ン क ह म Ա Շ Ժ ก ญ ქ ∞">
+    </div>
+  </div>
+
+  <div id="qrOverlay" class="qr-overlay" hidden>
+    <div class="qr-dialog" role="dialog" aria-modal="true" aria-labelledby="qrDialogLink">
+      <button id="qrClose" class="qr-close" type="button" aria-label="Close QR code">×</button>
+      <div class="qr-code"><svg class="qr-code-svg" aria-label="QR code" width="29.6mm" height="29.6mm" version="1.1" viewBox="0 0 29.6 29.6" xmlns="http://www.w3.org/2000/svg"><path d="M3.2,3.2H4V4H3.2zM4,3.2H4.8V4H4zM4.8,3.2H5.6V4H4.8zM5.6,3.2H6.4V4H5.6zM6.4,3.2H7.2V4H6.4zM7.2,3.2H8V4H7.2zM8,3.2H8.8V4H8zM10.4,3.2H11.2V4H10.4zM11.2,3.2H12V4H11.2zM15.2,3.2H16V4H15.2zM16,3.2H16.8V4H16zM18.4,3.2H19.2V4H18.4zM20.8,3.2H21.6V4H20.8zM21.6,3.2H22.4V4H21.6zM22.4,3.2H23.2V4H22.4zM23.2,3.2H24V4H23.2zM24,3.2H24.8V4H24zM24.8,3.2H25.6V4H24.8zM25.6,3.2H26.4V4H25.6zM3.2,4H4V4.8H3.2zM8,4H8.8V4.8H8zM9.6,4H10.4V4.8H9.6zM10.4,4H11.2V4.8H10.4zM12.8,4H13.6V4.8H12.8zM14.4,4H15.2V4.8H14.4zM15.2,4H16V4.8H15.2zM16.8,4H17.6V4.8H16.8zM17.6,4H18.4V4.8H17.6zM18.4,4H19.2V4.8H18.4zM20.8,4H21.6V4.8H20.8zM25.6,4H26.4V4.8H25.6zM3.2,4.8H4V5.6H3.2zM4.8,4.8H5.6V5.6H4.8zM5.6,4.8H6.4V5.6H5.6zM6.4,4.8H7.2V5.6H6.4zM8,4.8H8.8V5.6H8zM11.2,4.8H12V5.6H11.2zM12,4.8H12.8V5.6H12zM12.8,4.8H13.6V5.6H12.8zM14.4,4.8H15.2V5.6H14.4zM15.2,4.8H16V5.6H15.2zM16,4.8H16.8V5.6H16zM19.2,4.8H20V5.6H19.2zM20.8,4.8H21.6V5.6H20.8zM22.4,4.8H23.2V5.6H22.4zM23.2,4.8H24V5.6H23.2zM24,4.8H24.8V5.6H24zM25.6,4.8H26.4V5.6H25.6zM3.2,5.6H4V6.4H3.2zM4.8,5.6H5.6V6.4H4.8zM5.6,5.6H6.4V6.4H5.6zM6.4,5.6H7.2V6.4H6.4zM8,5.6H8.8V6.4H8zM11.2,5.6H12V6.4H11.2zM12,5.6H12.8V6.4H12zM15.2,5.6H16V6.4H15.2zM16,5.6H16.8V6.4H16zM17.6,5.6H18.4V6.4H17.6zM20.8,5.6H21.6V6.4H20.8zM22.4,5.6H23.2V6.4H22.4zM23.2,5.6H24V6.4H23.2zM24,5.6H24.8V6.4H24zM25.6,5.6H26.4V6.4H25.6zM3.2,6.4H4V7.2H3.2zM4.8,6.4H5.6V7.2H4.8zM5.6,6.4H6.4V7.2H5.6zM6.4,6.4H7.2V7.2H6.4zM8,6.4H8.8V7.2H8zM9.6,6.4H10.4V7.2H9.6zM12,6.4H12.8V7.2H12zM13.6,6.4H14.4V7.2H13.6zM14.4,6.4H15.2V7.2H14.4zM15.2,6.4H16V7.2H15.2zM16,6.4H16.8V7.2H16zM17.6,6.4H18.4V7.2H17.6zM18.4,6.4H19.2V7.2H18.4zM20.8,6.4H21.6V7.2H20.8zM22.4,6.4H23.2V7.2H22.4zM23.2,6.4H24V7.2H23.2zM24,6.4H24.8V7.2H24zM25.6,6.4H26.4V7.2H25.6zM3.2,7.2H4V8H3.2zM8,7.2H8.8V8H8zM11.2,7.2H12V8H11.2zM14.4,7.2H15.2V8H14.4zM15.2,7.2H16V8H15.2zM18.4,7.2H19.2V8H18.4zM20.8,7.2H21.6V8H20.8zM25.6,7.2H26.4V8H25.6zM3.2,8H4V8.8H3.2zM4,8H4.8V8.8H4zM4.8,8H5.6V8.8H4.8zM5.6,8H6.4V8.8H5.6zM6.4,8H7.2V8.8H6.4zM7.2,8H8V8.8H7.2zM8,8H8.8V8.8H8zM9.6,8H10.4V8.8H9.6zM11.2,8H12V8.8H11.2zM12.8,8H13.6V8.8H12.8zM14.4,8H15.2V8.8H14.4zM16,8H16.8V8.8H16zM17.6,8H18.4V8.8H17.6zM19.2,8H20V8.8H19.2zM20.8,8H21.6V8.8H20.8zM21.6,8H22.4V8.8H21.6zM22.4,8H23.2V8.8H22.4zM23.2,8H24V8.8H23.2zM24,8H24.8V8.8H24zM24.8,8H25.6V8.8H24.8zM25.6,8H26.4V8.8H25.6zM11.2,8.8H12V9.6H11.2zM12.8,8.8H13.6V9.6H12.8zM13.6,8.8H14.4V9.6H13.6zM14.4,8.8H15.2V9.6H14.4zM15.2,8.8H16V9.6H15.2zM16.8,8.8H17.6V9.6H16.8zM18.4,8.8H19.2V9.6H18.4zM19.2,8.8H20V9.6H19.2zM3.2,9.6H4V10.4H3.2zM4.8,9.6H5.6V10.4H4.8zM6.4,9.6H7.2V10.4H6.4zM8,9.6H8.8V10.4H8zM11.2,9.6H12V10.4H11.2zM12.8,9.6H13.6V10.4H12.8zM14.4,9.6H15.2V10.4H14.4zM16.8,9.6H17.6V10.4H16.8zM17.6,9.6H18.4V10.4H17.6zM22.4,9.6H23.2V10.4H22.4zM24.8,9.6H25.6V10.4H24.8zM4.8,10.4H5.6V11.2H4.8zM8.8,10.4H9.6V11.2H8.8zM10.4,10.4H11.2V11.2H10.4zM11.2,10.4H12V11.2H11.2zM12.8,10.4H13.6V11.2H12.8zM19.2,10.4H20V11.2H19.2zM20.8,10.4H21.6V11.2H20.8zM23.2,10.4H24V11.2H23.2zM25.6,10.4H26.4V11.2H25.6zM3.2,11.2H4V12H3.2zM6.4,11.2H7.2V12H6.4zM7.2,11.2H8V12H7.2zM8,11.2H8.8V12H8zM12,11.2H12.8V12H12zM13.6,11.2H14.4V12H13.6zM16,11.2H16.8V12H16zM16.8,11.2H17.6V12H16.8zM20.8,11.2H21.6V12H20.8zM21.6,11.2H22.4V12H21.6zM22.4,11.2H23.2V12H22.4zM24,11.2H24.8V12H24zM24.8,11.2H25.6V12H24.8zM25.6,11.2H26.4V12H25.6zM7.2,12H8V12.8H7.2zM9.6,12H10.4V12.8H9.6zM12.8,12H13.6V12.8H12.8zM16.8,12H17.6V12.8H16.8zM18.4,12H19.2V12.8H18.4zM20,12H20.8V12.8H20zM20.8,12H21.6V12.8H20.8zM21.6,12H22.4V12.8H21.6zM22.4,12H23.2V12.8H22.4zM24.8,12H25.6V12.8H24.8zM3.2,12.8H4V13.6H3.2zM4.8,12.8H5.6V13.6H4.8zM5.6,12.8H6.4V13.6H5.6zM6.4,12.8H7.2V13.6H6.4zM8,12.8H8.8V13.6H8zM8.8,12.8H9.6V13.6H8.8zM9.6,12.8H10.4V13.6H9.6zM11.2,12.8H12V13.6H11.2zM12,12.8H12.8V13.6H12zM16.8,12.8H17.6V13.6H16.8zM18.4,12.8H19.2V13.6H18.4zM19.2,12.8H20V13.6H19.2zM20,12.8H20.8V13.6H20zM20.8,12.8H21.6V13.6H20.8zM23.2,12.8H24V13.6H23.2zM24.8,12.8H25.6V13.6H24.8zM25.6,12.8H26.4V13.6H25.6zM3.2,13.6H4V14.4H3.2zM4,13.6H4.8V14.4H4zM4.8,13.6H5.6V14.4H4.8zM6.4,13.6H7.2V14.4H6.4zM7.2,13.6H8V14.4H7.2zM9.6,13.6H10.4V14.4H9.6zM12,13.6H12.8V14.4H12zM13.6,13.6H14.4V14.4H13.6zM19.2,13.6H20V14.4H19.2zM20,13.6H20.8V14.4H20zM20.8,13.6H21.6V14.4H20.8zM23.2,13.6H24V14.4H23.2zM25.6,13.6H26.4V14.4H25.6zM3.2,14.4H4V15.2H3.2zM5.6,14.4H6.4V15.2H5.6zM6.4,14.4H7.2V15.2H6.4zM8,14.4H8.8V15.2H8zM8.8,14.4H9.6V15.2H8.8zM11.2,14.4H12V15.2H11.2zM14.4,14.4H15.2V15.2H14.4zM16,14.4H16.8V15.2H16zM17.6,14.4H18.4V15.2H17.6zM20,14.4H20.8V15.2H20zM20.8,14.4H21.6V15.2H20.8zM21.6,14.4H22.4V15.2H21.6zM22.4,14.4H23.2V15.2H22.4zM23.2,14.4H24V15.2H23.2zM24.8,14.4H25.6V15.2H24.8zM25.6,14.4H26.4V15.2H25.6zM3.2,15.2H4V16H3.2zM9.6,15.2H10.4V16H9.6zM10.4,15.2H11.2V16H10.4zM11.2,15.2H12V16H11.2zM12,15.2H12.8V16H12zM12.8,15.2H13.6V16H12.8zM13.6,15.2H14.4V16H13.6zM14.4,15.2H15.2V16H14.4zM15.2,15.2H16V16H15.2zM16,15.2H16.8V16H16zM16.8,15.2H17.6V16H16.8zM17.6,15.2H18.4V16H17.6zM19.2,15.2H20V16H19.2zM21.6,15.2H22.4V16H21.6zM23.2,15.2H24V16H23.2zM24.8,15.2H25.6V16H24.8zM5.6,16H6.4V16.8H5.6zM6.4,16H7.2V16.8H6.4zM8,16H8.8V16.8H8zM9.6,16H10.4V16.8H9.6zM11.2,16H12V16.8H11.2zM12,16H12.8V16.8H12zM12.8,16H13.6V16.8H12.8zM14.4,16H15.2V16.8H14.4zM16,16H16.8V16.8H16zM16.8,16H17.6V16.8H16.8zM19.2,16H20V16.8H19.2zM20,16H20.8V16.8H20zM20.8,16H21.6V16.8H20.8zM23.2,16H24V16.8H23.2zM24.8,16H25.6V16.8H24.8zM25.6,16H26.4V16.8H25.6zM4,16.8H4.8V17.6H4zM5.6,16.8H6.4V17.6H5.6zM8.8,16.8H9.6V17.6H8.8zM9.6,16.8H10.4V17.6H9.6zM12.8,16.8H13.6V17.6H12.8zM14.4,16.8H15.2V17.6H14.4zM16,16.8H16.8V17.6H16zM19.2,16.8H20V17.6H19.2zM20.8,16.8H21.6V17.6H20.8zM23.2,16.8H24V17.6H23.2zM24,16.8H24.8V17.6H24zM25.6,16.8H26.4V17.6H25.6zM3.2,17.6H4V18.4H3.2zM4.8,17.6H5.6V18.4H4.8zM5.6,17.6H6.4V18.4H5.6zM6.4,17.6H7.2V18.4H6.4zM8,17.6H8.8V18.4H8zM8.8,17.6H9.6V18.4H8.8zM9.6,17.6H10.4V18.4H9.6zM10.4,17.6H11.2V18.4H10.4zM13.6,17.6H14.4V18.4H13.6zM16.8,17.6H17.6V18.4H16.8zM19.2,17.6H20V18.4H19.2zM22.4,17.6H23.2V18.4H22.4zM24.8,17.6H25.6V18.4H24.8zM25.6,17.6H26.4V18.4H25.6zM4,18.4H4.8V19.2H4zM8.8,18.4H9.6V19.2H8.8zM9.6,18.4H10.4V19.2H9.6zM11.2,18.4H12V19.2H11.2zM15.2,18.4H16V19.2H15.2zM16.8,18.4H17.6V19.2H16.8zM17.6,18.4H18.4V19.2H17.6zM19.2,18.4H20V19.2H19.2zM20,18.4H20.8V19.2H20zM22.4,18.4H23.2V19.2H22.4zM23.2,18.4H24V19.2H23.2zM24.8,18.4H25.6V19.2H24.8zM3.2,19.2H4V20H3.2zM4.8,19.2H5.6V20H4.8zM6.4,19.2H7.2V20H6.4zM7.2,19.2H8V20H7.2zM8,19.2H8.8V20H8zM8.8,19.2H9.6V20H8.8zM11.2,19.2H12V20H11.2zM12,19.2H12.8V20H12zM12.8,19.2H13.6V20H12.8zM16,19.2H16.8V20H16zM16.8,19.2H17.6V20H16.8zM17.6,19.2H18.4V20H17.6zM18.4,19.2H19.2V20H18.4zM19.2,19.2H20V20H19.2zM20,19.2H20.8V20H20zM20.8,19.2H21.6V20H20.8zM21.6,19.2H22.4V20H21.6zM22.4,19.2H23.2V20H22.4zM9.6,20H10.4V20.8H9.6zM12,20H12.8V20.8H12zM12.8,20H13.6V20.8H12.8zM13.6,20H14.4V20.8H13.6zM16,20H16.8V20.8H16zM18.4,20H19.2V20.8H18.4zM19.2,20H20V20.8H19.2zM22.4,20H23.2V20.8H22.4zM24,20H24.8V20.8H24zM24.8,20H25.6V20.8H24.8zM25.6,20H26.4V20.8H25.6zM3.2,20.8H4V21.6H3.2zM4,20.8H4.8V21.6H4zM4.8,20.8H5.6V21.6H4.8zM5.6,20.8H6.4V21.6H5.6zM6.4,20.8H7.2V21.6H6.4zM7.2,20.8H8V21.6H7.2zM8,20.8H8.8V21.6H8zM10.4,20.8H11.2V21.6H10.4zM11.2,20.8H12V21.6H11.2zM12,20.8H12.8V21.6H12zM14.4,20.8H15.2V21.6H14.4zM16.8,20.8H17.6V21.6H16.8zM18.4,20.8H19.2V21.6H18.4zM19.2,20.8H20V21.6H19.2zM20.8,20.8H21.6V21.6H20.8zM22.4,20.8H23.2V21.6H22.4zM23.2,20.8H24V21.6H23.2zM24.8,20.8H25.6V21.6H24.8zM25.6,20.8H26.4V21.6H25.6zM3.2,21.6H4V22.4H3.2zM8,21.6H8.8V22.4H8zM12,21.6H12.8V22.4H12zM13.6,21.6H14.4V22.4H13.6zM14.4,21.6H15.2V22.4H14.4zM16.8,21.6H17.6V22.4H16.8zM17.6,21.6H18.4V22.4H17.6zM18.4,21.6H19.2V22.4H18.4zM19.2,21.6H20V22.4H19.2zM22.4,21.6H23.2V22.4H22.4zM23.2,21.6H24V22.4H23.2zM24.8,21.6H25.6V22.4H24.8zM25.6,21.6H26.4V22.4H25.6zM3.2,22.4H4V23.2H3.2zM4.8,22.4H5.6V23.2H4.8zM5.6,22.4H6.4V23.2H5.6zM6.4,22.4H7.2V23.2H6.4zM8,22.4H8.8V23.2H8zM9.6,22.4H10.4V23.2H9.6zM11.2,22.4H12V23.2H11.2zM12,22.4H12.8V23.2H12zM14.4,22.4H15.2V23.2H14.4zM16,22.4H16.8V23.2H16zM16.8,22.4H17.6V23.2H16.8zM19.2,22.4H20V23.2H19.2zM20,22.4H20.8V23.2H20zM20.8,22.4H21.6V23.2H20.8zM21.6,22.4H22.4V23.2H21.6zM22.4,22.4H23.2V23.2H22.4zM24.8,22.4H25.6V23.2H24.8zM25.6,22.4H26.4V23.2H25.6zM3.2,23.2H4V24H3.2zM4.8,23.2H5.6V24H4.8zM5.6,23.2H6.4V24H5.6zM6.4,23.2H7.2V24H6.4zM8,23.2H8.8V24H8zM10.4,23.2H11.2V24H10.4zM12,23.2H12.8V24H12zM14.4,23.2H15.2V24H14.4zM16,23.2H16.8V24H16zM16.8,23.2H17.6V24H16.8zM18.4,23.2H19.2V24H18.4zM19.2,23.2H20V24H19.2zM21.6,23.2H22.4V24H21.6zM22.4,23.2H23.2V24H22.4zM24,23.2H24.8V24H24zM24.8,23.2H25.6V24H24.8zM25.6,23.2H26.4V24H25.6zM3.2,24H4V24.8H3.2zM4.8,24H5.6V24.8H4.8zM5.6,24H6.4V24.8H5.6zM6.4,24H7.2V24.8H6.4zM8,24H8.8V24.8H8zM9.6,24H10.4V24.8H9.6zM10.4,24H11.2V24.8H10.4zM13.6,24H14.4V24.8H13.6zM14.4,24H15.2V24.8H14.4zM16.8,24H17.6V24.8H16.8zM18.4,24H19.2V24.8H18.4zM21.6,24H22.4V24.8H21.6zM22.4,24H23.2V24.8H22.4zM23.2,24H24V24.8H23.2zM25.6,24H26.4V24.8H25.6zM3.2,24.8H4V25.6H3.2zM8,24.8H8.8V25.6H8zM10.4,24.8H11.2V25.6H10.4zM14.4,24.8H15.2V25.6H14.4zM15.2,24.8H16V25.6H15.2zM16,24.8H16.8V25.6H16zM16.8,24.8H17.6V25.6H16.8zM18.4,24.8H19.2V25.6H18.4zM19.2,24.8H20V25.6H19.2zM22.4,24.8H23.2V25.6H22.4zM24.8,24.8H25.6V25.6H24.8zM3.2,25.6H4V26.4H3.2zM4,25.6H4.8V26.4H4zM4.8,25.6H5.6V26.4H4.8zM5.6,25.6H6.4V26.4H5.6zM6.4,25.6H7.2V26.4H6.4zM7.2,25.6H8V26.4H7.2zM8,25.6H8.8V26.4H8zM9.6,25.6H10.4V26.4H9.6zM10.4,25.6H11.2V26.4H10.4zM11.2,25.6H12V26.4H11.2zM12,25.6H12.8V26.4H12zM14.4,25.6H15.2V26.4H14.4zM15.2,25.6H16V26.4H15.2zM16,25.6H16.8V26.4H16zM16.8,25.6H17.6V26.4H16.8zM18.4,25.6H19.2V26.4H18.4zM19.2,25.6H20V26.4H19.2zM20,25.6H20.8V26.4H20zM20.8,25.6H21.6V26.4H20.8zM22.4,25.6H23.2V26.4H22.4zM24.8,25.6H25.6V26.4H24.8zM25.6,25.6H26.4V26.4H25.6z" id="qr-path" fill="#000000" fill-opacity="1" fill-rule="nonzero" stroke="none"/></svg></div>
+      <a id="qrDialogLink" class="qr-dialog-link" href="https://clairexen.github.io/fmcad2026/" target="_blank" rel="noopener noreferrer">https://clairexen.github.io/fmcad2026/</a>
     </div>
   </div>
 </main>
@@ -534,10 +567,17 @@ const el = {
     sidebarTab: document.getElementById('networkSidebarTab'),
     sidebarContent: document.getElementById('networkSidebarContent'),
     miniButterfly: document.getElementById('miniButterfly'),
+    miniButterflyTitle: document.getElementById('miniButterflyTitle'),
+    miniOmegaTitle: document.getElementById('miniOmegaTitle'),
+    miniRNetworkTitle: document.getElementById('miniRNetworkTitle'),
     miniOmega: document.getElementById('miniOmega'),
     miniRNetwork: document.getElementById('miniRNetwork'),
     miniInputOutput: document.getElementById('miniInputOutput'),
     status: document.getElementById('status'),
+    statusText: document.getElementById('statusText'),
+    qrOpen: document.getElementById('qrOpen'),
+    qrOverlay: document.getElementById('qrOverlay'),
+    qrClose: document.getElementById('qrClose'),
     modeSelect: document.getElementById('modeSelect'),
     nSelect: document.getElementById('nSelect'),
     speed: document.getElementById('speed'),
@@ -560,6 +600,7 @@ const el = {
     switchLabels: document.getElementById('showSwitchLabels'),
     shades: document.getElementById('showSignalShades'),
     silverGreen: document.getElementById('showSilverGreen'),
+    hideZero: document.getElementById('hideZeroSignals'),
     pairArcs: document.getElementById('showPairArcs'),
     moveOnArcs: document.getElementById('moveOnArcs'),
     autoAlign: document.getElementById('autoAlign'),
@@ -580,6 +621,8 @@ const el = {
     tabChallenge: document.getElementById('tabChallenge'),
     quickRandom: document.getElementById('quickRandom'),
     quickReshuffle: document.getElementById('quickReshuffle'),
+    quickAlign: document.getElementById('quickAlign'),
+    quickRoute: document.getElementById('quickRoute'),
     resetControls: document.getElementById('resetControls'),
     challengeOverlay: document.getElementById('challengeOverlay'),
     challengeStop: document.getElementById('challengeStop'),
@@ -615,7 +658,7 @@ el.stage = document.querySelector(".network-stage");
 el.controlsContent = document.getElementById("controlsSidebarContent");
 const mobileQuery = window.matchMedia('(max-width:760px)');
 const VISUAL_OPTIONS = ['boxes', 'upper', 'lower', 'walls', 'stars', 'checks', 'switchLabels',
-    'shades', 'silverGreen', 'pairArcs', 'generalizedShuffle', 'moveOnArcs', 'autoAlign', 'reverseDataflow'];
+    'shades', 'silverGreen', 'hideZero', 'pairArcs', 'generalizedShuffle', 'moveOnArcs', 'autoAlign', 'reverseDataflow'];
 const state = {
     N: 8, n: 3, speed: 2, stageSpacing: 4, inputs: [], canonicalLabels: [], pairState: [], layers: [], carry: [],
     outByOrigin: [], colors: [], positions: [], inputPositions: [], outputPositions: [],
@@ -719,6 +762,8 @@ function cacheSignalColors() {
 }
 function signalCoreColor(signal) { return state.colors[signal.origin].core; }
 function signalGlowColor(signal) { return state.colors[signal.origin].glow; }
+function hiddenZero(signal) { return !!el.hideZero?.checked && signal?.value === 0; }
+function displayedSignalCore(signal) { return hiddenZero(signal) ? '#8c96a8' : signalCoreColor(signal); }
 function resetNetwork(N) {
     if (!SIZES.includes(N))
         throw new RangeError('N must be 8, 16, 32, or 64');
@@ -1859,6 +1904,10 @@ function buildRoutePathData(g, vg) {
         if (dist(a, b) < 0.05)
             return;
         const value = signal.value;
+        if (hiddenZero(signal)) {
+            addInactive(a, b);
+            return;
+        }
         const d = value === 1 ? `M${fmt(a.x)},${fmt(a.y)}L${fmt(b.x)},${fmt(b.y)}` : wavyD([a, b], amplitude, wavelength);
         if (!d)
             return;
@@ -1882,6 +1931,18 @@ function renderIOBox(g, x, y, signal, kind, j) {
     const fontSize = clamp(g.dx * 0.25, 6.5, 11.5);
     const bitSize = clamp(g.dx * 0.16, 5.5, 8.2);
     const value = signal.value;
+    if (hiddenZero(signal)) {
+        const bitIndex = state.N - 1 - j;
+        const isTopRow = y < g.H / 2;
+        const indexY = isTopRow ? y - g.ioH / 2 - 5 : y + g.ioH / 2 + 10;
+        const indexEven = (bitIndex & 1) === 0;
+        const indexX = indexEven ? x + g.ioW / 2 - 1.5 : x - g.ioW / 2 + 1.5;
+        const indexAnchor = indexEven ? 'end' : 'start';
+        return `<g data-io-decal="${kind}" data-io-j="${j}" data-io-base-x="${fmt(x)}" data-io-base-y="${fmt(y)}">` +
+          `<rect x="${fmt(x-g.ioW/2)}" y="${fmt(y-g.ioH/2)}" width="${fmt(g.ioW)}" height="${fmt(g.ioH)}" rx="2" fill="white" fill-opacity="0.7" stroke="#8c96a8" stroke-width="1.35" stroke-dasharray="2.6 4.2"/>` +
+          `<text x="${fmt(indexX)}" y="${fmt(indexY)}" text-anchor="${indexAnchor}" class="svg-label" font-size="${fmt(clamp(g.dx*0.15,6,9))}" fill="#687487">${bitIndex}</text>` +
+          `</g>`;
+    }
     const tri = value === 2; // sparkle remains reserved exclusively for the X state
     const glowStroke = signalGlowColor(signal);
     const coreStroke = signalCoreColor(signal);
@@ -1959,8 +2020,8 @@ function fullRender(now = performance.now()) {
                 const nodeOut = vg.stageOutputNodes[s][j];
                 const inputSig = state.layers[s][j];
                 const outputSig = state.layers[s + 1][j];
-                boxFront += `<circle cx="${fmt(nodeIn.x)}" cy="${fmt(nodeIn.y)}" r="2.7" fill="${signalCoreColor(inputSig)}" stroke="white" stroke-width="0.8" opacity="${fmt(g.nodeOpacity)}"/>`;
-                boxFront += `<circle cx="${fmt(nodeOut.x)}" cy="${fmt(nodeOut.y)}" r="2.7" fill="${signalCoreColor(outputSig)}" stroke="white" stroke-width="0.8" opacity="${fmt(g.nodeOpacity)}"/>`;
+                boxFront += `<circle cx="${fmt(nodeIn.x)}" cy="${fmt(nodeIn.y)}" r="2.7" fill="${displayedSignalCore(inputSig)}" stroke="white" stroke-width="0.8" opacity="${fmt(g.nodeOpacity)}"/>`;
+                boxFront += `<circle cx="${fmt(nodeOut.x)}" cy="${fmt(nodeOut.y)}" r="2.7" fill="${displayedSignalCore(outputSig)}" stroke="white" stroke-width="0.8" opacity="${fmt(g.nodeOpacity)}"/>`;
             }
             if (g.boxOpacity > 0.05) {
                 hits += `<rect class="hit" data-type="box" data-s="${s}" data-q="${q}" tabindex="0" role="button" aria-label="Stage ${s + 1}, box ${q}: toggle paired switches" x="${fmt(b.left)}" y="${fmt(b.top)}" width="${fmt(b.width)}" height="${fmt(b.height)}" rx="9"/>`;
@@ -1994,11 +2055,11 @@ function fullRender(now = performance.now()) {
             switchBack += `<circle class="switch-back" transform="${transform}" cx="0" cy="0" r="${fmt(g.r)}" fill="white" fill-opacity="0.83"/>`;
             switchFront += `<g class="switch-front" transform="${transform}">` +
                 `<circle cx="0" cy="0" r="${fmt(g.r)}" fill="none" stroke="#303b4d" stroke-width="1.35"/>` +
-                `<circle cx="${fmt(selectedRel.x)}" cy="${fmt(selectedRel.y)}" r="2.5" fill="${signalCoreColor(selectedSig)}" stroke="white" stroke-width="0.75"/>` +
+                `<circle cx="${fmt(selectedRel.x)}" cy="${fmt(selectedRel.y)}" r="2.5" fill="${displayedSignalCore(selectedSig)}" stroke="white" stroke-width="0.75"/>` +
                 `<circle cx="${fmt(inactiveRel.x)}" cy="${fmt(inactiveRel.y)}" r="2.35" fill="white" stroke="#8c96a8" stroke-width="1"/>` +
-                `<circle cx="${fmt(outputRel.x)}" cy="${fmt(outputRel.y)}" r="2.6" fill="${signalCoreColor(outputSig)}" stroke="white" stroke-width="0.75"/>` +
+                `<circle cx="${fmt(outputRel.x)}" cy="${fmt(outputRel.y)}" r="2.6" fill="${displayedSignalCore(outputSig)}" stroke="white" stroke-width="0.75"/>` +
                 `</g>`;
-            if (el.switchLabels.checked) {
+            if (el.switchLabels.checked && !hiddenZero(outputSig)) {
                 const anchor = sw.side === 0 ? 'end' : 'start';
                 const x = sw.output.x + (sw.side === 0 ? -4.5 : 4.5);
                 annotations += `<text data-switch-label="1" data-s="${s}" data-j="${j}" x="${fmt(x)}" y="${fmt(sw.output.y + 2.8)}" text-anchor="${anchor}" class="svg-label" font-size="${fmt(clamp(g.dx * 0.16, 6.2, 9))}" font-weight="700">${esc(outputSig.label)}</text>`;
@@ -2124,6 +2185,10 @@ function buildCanvasRoutePaths(g, vg) {
         if (dist(a, b) < 0.05)
             return;
         const value = signal.value;
+        if (hiddenZero(signal)) {
+            addInactive(a, b);
+            return;
+        }
         const path = (el.shades.checked || el.silverGreen.checked) ? shaded[signal.origin] : (value === 2 ? tri : (value === 1 ? one : zero));
         if (value === 1) {
             path.moveTo(a.x, a.y);
@@ -2238,12 +2303,12 @@ function drawMotionFront(ctx, g, vg) {
             const selectedInputJ = sw.side === 0 ? (pass ? j0 : j1) : (pass ? j1 : j0);
             const selectedSig = state.layers[s][selectedInputJ], outputSig = state.layers[s + 1][j];
             canvasCircle(ctx, sw.center.x, sw.center.y, g.r, null, '#303b4d', 1.35);
-            const selectedColor = signalCoreColor(selectedSig);
-            const outputColor = signalCoreColor(outputSig);
+            const selectedColor = displayedSignalCore(selectedSig);
+            const outputColor = displayedSignalCore(outputSig);
             canvasCircle(ctx, selectedPort.x, selectedPort.y, 2.5, selectedColor, 'white', 0.75);
             canvasCircle(ctx, inactivePort.x, inactivePort.y, 2.35, 'white', '#8c96a8', 1);
             canvasCircle(ctx, sw.output.x, sw.output.y, 2.6, outputColor, 'white', 0.75);
-            if (el.switchLabels.checked) {
+            if (el.switchLabels.checked && !hiddenZero(outputSig)) {
                 const size = clamp(g.dx * 0.16, 6.2, 9);
                 const x = sw.output.x + (sw.side === 0 ? -4.5 : 4.5), y = sw.output.y + 2.8;
                 ctx.font = `700 ${size}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
@@ -2330,7 +2395,12 @@ function renderMiniInputOutput() {
         // - X remains silver.
         let core = signalCoreColor(signal);
         let glow = signalGlowColor(signal);
-        if (value === 1 && goingLeft) {
+        const hideZero = hiddenZero(signal);
+        if (hideZero) {
+            core = '#8c96a8';
+            glow = '#8c96a8';
+        }
+        else if (value === 1 && goingLeft) {
             core = '#278a57';
             glow = '#8fd5ad';
         }
@@ -2376,8 +2446,12 @@ function renderMiniInputOutput() {
                 `L ${fmt(x2)} ${fmt(y2)} ` +
                 `L ${fmt(x2)} ${fmt(bottomY - boxH / 2)}`;
         }
-        parts.push(`<path d="${d}" fill="none" stroke="${glow}" stroke-width="${value === 2 ? 4.5 : 3.7}" opacity="${value === 2 ? 0.55 : 0.38}" stroke-linecap="round" stroke-linejoin="round"/>`);
-        parts.push(`<path d="${d}" fill="none" stroke="${core}" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>`);
+        if (hideZero) {
+            parts.push(`<path d="${d}" fill="none" stroke="#8c96a8" stroke-width="1.15" stroke-dasharray="2.6 4.2" stroke-linecap="round" stroke-linejoin="round"/>`);
+        } else {
+            parts.push(`<path d="${d}" fill="none" stroke="${glow}" stroke-width="${value === 2 ? 4.5 : 3.7}" opacity="${value === 2 ? 0.55 : 0.38}" stroke-linecap="round" stroke-linejoin="round"/>`);
+            parts.push(`<path d="${d}" fill="none" stroke="${core}" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>`);
+        }
     }
     // Two unlabeled rows of compact input/output boxes.
     for (let j = 0; j < N; j++) {
@@ -2410,10 +2484,14 @@ function renderMiniInputOutput() {
             outputCore = '#727b89';
             outputFill = '#f1f2f4';
         }
+        const inputHidden = hiddenZero(input);
+        const outputHidden = hiddenZero(output);
+        if (inputHidden) { inputCore = '#8c96a8'; inputFill = '#ffffff'; }
+        if (outputHidden) { outputCore = '#8c96a8'; outputFill = '#ffffff'; }
         const irx = input.value === 1 ? 1 : 3;
         const orx = output.value === 1 ? 1 : 3;
-        parts.push(`<rect x="${fmt(ix - boxW / 2)}" y="${fmt(topY - boxH / 2)}" width="${fmt(boxW)}" height="${boxH}" rx="${irx}" fill="${inputFill}" stroke="${inputCore}" stroke-width="1.2"/>`);
-        parts.push(`<rect x="${fmt(ox - boxW / 2)}" y="${fmt(bottomY - boxH / 2)}" width="${fmt(boxW)}" height="${boxH}" rx="${orx}" fill="${outputFill}" stroke="${outputCore}" stroke-width="1.2"/>`);
+        parts.push(`<rect x="${fmt(ix - boxW / 2)}" y="${fmt(topY - boxH / 2)}" width="${fmt(boxW)}" height="${boxH}" rx="${irx}" fill="${inputFill}" stroke="${inputCore}" stroke-width="1.2"${inputHidden ? ' stroke-dasharray="2.6 4.2"' : ''}/>`);
+        parts.push(`<rect x="${fmt(ox - boxW / 2)}" y="${fmt(bottomY - boxH / 2)}" width="${fmt(boxW)}" height="${boxH}" rx="${orx}" fill="${outputFill}" stroke="${outputCore}" stroke-width="1.2"${outputHidden ? ' stroke-dasharray="2.6 4.2"' : ''}/>`);
     }
     parts.push(`</svg>`);
     el.miniInputOutput.innerHTML = parts.join('');
@@ -2421,7 +2499,7 @@ function renderMiniInputOutput() {
 function renderMiniDiagrams() {
     if (!sidebarVisible())
         return;
-    const stamp = `${state.modelRevision}:${el.shades.checked}:${el.silverGreen.checked}`;
+    const stamp = `${state.modelRevision}:${el.shades.checked}:${el.silverGreen.checked}:${el.hideZero.checked}`;
     if (diagramStamp === stamp)
         return;
     diagramStamp = stamp;
@@ -2687,11 +2765,23 @@ function updateOptionAvailability() {
         setCheckboxAvailability(el[key], boxes);
     setCheckboxAvailability(el.stars, boxes && el.lower.checked);
     setCheckboxAvailability(el.pairArcs, !allPairsCollapsed());
-    for (const key of ['walls', 'switchLabels', 'shades', 'silverGreen', 'generalizedShuffle', 'moveOnArcs', 'autoAlign', 'boxes', 'auto', 'reverseDataflow'])
+    for (const key of ['walls', 'switchLabels', 'shades', 'silverGreen', 'hideZero', 'generalizedShuffle', 'moveOnArcs', 'autoAlign', 'boxes', 'auto', 'reverseDataflow'])
         setCheckboxAvailability(el[key], true);
 }
+function updateModeTerminology() {
+    const scatter = isScatterMode();
+    el.butterfly.textContent = scatter ? '1 · Butterfly' : '1 · Reverse butterfly';
+    el.omega.textContent = scatter ? '2 · Omega' : '2 · Reverse omega';
+    el.rnetwork.textContent = scatter ? '3 · Baseline' : '3 · R-Network';
+    el.miniButterflyTitle.textContent = scatter ? 'Butterfly' : 'Reverse Butterfly';
+    el.miniOmegaTitle.textContent = scatter ? 'Omega' : 'Reverse Omega';
+    el.miniRNetworkTitle.textContent = scatter ? 'Baseline' : 'R-Network';
+}
 function updateStatus() {
-    const names = { butterfly: 'reverse butterfly', omega: 'reverse omega', rnetwork: 'R-network', custom: 'custom dragged layout' };
+    updateModeTerminology();
+    const names = isScatterMode()
+      ? { butterfly: 'butterfly', omega: 'omega', rnetwork: 'Baseline', custom: 'custom dragged layout' }
+      : { butterfly: 'reverse butterfly', omega: 'reverse omega', rnetwork: 'R-network', custom: 'custom dragged layout' };
     const layout = state.targetLayout ? `moving → ${names[state.targetLayout]}` :
         state.motions.size ? `custom (${state.motions.size} moving rows)` : names[state.layout];
     const fields = [`mode=${isScatterMode() ? 'BMSF' : 'BMGF'}`, `N=${state.N}`, `stages=${state.n}`,
@@ -2700,8 +2790,8 @@ function updateStatus() {
     if (el.checks.checked)
         fields.push(`checks=${state.carry.flat().filter(c => c.check).length}/${state.n * state.N / 2}`);
     const text = fields.join('  ·  ');
-    if (el.status.textContent !== text)
-        el.status.textContent = text;
+    if (el.statusText.textContent !== text)
+        el.statusText.textContent = text;
 }
 
 
@@ -3125,7 +3215,14 @@ function installInteractions() {
         collapsePairs: toggleCollapsePairs, reverseAll: reverseAllShuffles,
         inputsAll1: () => setInputPattern('all1'), inputsAll0: () => setInputPattern('all0'), inputsAlternating: () => setInputPattern('alternating'),
         inputsRandom: () => setInputPattern('random'), quickRandom: () => setInputPattern('random'),
-        inputsReshuffle: reshuffleInputs, quickReshuffle: reshuffleInputs, toggleAllInputs,
+        inputsReshuffle: reshuffleInputs, quickReshuffle: reshuffleInputs,
+        quickAlign: () => {
+            const was = el.autoAlign.checked;
+            if (!was) el.autoAlign.checked = true;
+            autoAlignAll();
+            if (!was) { el.autoAlign.checked = false; updateOptionAvailability(); }
+        },
+        quickRoute: setSwitchesOnce, toggleAllInputs,
         setSwitches: setSwitchesOnce, resetSwitches: () => setAllSwitches('reset'), toggleAllSwitches: () => setAllSwitches('toggle'),
         randomizeSwitches, resetControls: () => resetControlsToDefaults(false),
         tabPlay: () => enterAppMode('playground'), tabStory: enterStoryMode, tabChallenge: enterChallengeMode,
@@ -3343,6 +3440,7 @@ const COMMAND_DOCS = Object.freeze([
     ['+switch-labels=0|1', 'Hide or show switch-output labels.'],
     ['+shades=0|1', 'Disable or enable per-signal shades.'],
     ['+silver-green=0|1', 'Disable or enable the silver/green directional palette.'],
+    ['+hide-zero=0|1', 'Render 0-signals as neutral dashed unused nets and blank ports.'],
     ['+pair-arcs=0|1', 'Hide or show paired-switch arcs.'],
     ['+move-arcs=0|1', 'Use straight movement or movement on arcs.'],
     ['+auto-align=0|1', 'Disable or enable Auto-align.'],
@@ -3363,7 +3461,7 @@ const COMMAND_DOCS = Object.freeze([
 const VISUAL_COMMANDS = Object.freeze({
     auto: 'auto', boxes: 'boxes', upper: 'lsb-band', lower: 'msb-band', walls: 'walls',
     generalizedShuffle: 'shuffles', stars: 'stars', checks: 'checks', switchLabels: 'switch-labels',
-    shades: 'shades', silverGreen: 'silver-green', pairArcs: 'pair-arcs', moveOnArcs: 'move-arcs',
+    shades: 'shades', silverGreen: 'silver-green', hideZero: 'hide-zero', pairArcs: 'pair-arcs', moveOnArcs: 'move-arcs',
     autoAlign: 'auto-align', reverseDataflow: 'reverse-dataflow'
 });
 function controlVectorString() {
@@ -3394,6 +3492,7 @@ function recordControlAction(key) {
         inputsAll1: '+ctrl=1*', inputsAll0: '+ctrl=0*', inputsAlternating: '+ctrl=alternate',
         inputsRandom: '+ctrl=randomize', quickRandom: '+ctrl=randomize',
         inputsReshuffle: '+ctrl=reshuffle', quickReshuffle: '+ctrl=reshuffle',
+        quickAlign: '+auto-align=1', quickRoute: '+switch-set',
         toggleAllInputs: '+ctrl=toggle', setSwitches: '+switch-set', resetSwitches: '+switch-reset',
         toggleAllSwitches: '+switch-toggle', randomizeSwitches: '+switch-randomize', resetControls: '+reset'
     };
@@ -3546,7 +3645,7 @@ function executeConsoleCommand(command) {
     if (name === 'spacing') { const v = Number(need()); if (!Number.isInteger(v) || v < 1 || v > 5) throw new Error('Spacing must be 1 through 5'); el.stageSpacing.value = String(v); dispatchInput(el.stageSpacing); dispatchChange(el.stageSpacing); return; }
     const checks = { auto:el.auto, boxes:el.boxes, 'lsb-band':el.upper, 'msb-band':el.lower, walls:el.walls,
         shuffles:el.generalizedShuffle, stars:el.stars, checks:el.checks, 'switch-labels':el.switchLabels,
-        shades:el.shades, 'silver-green':el.silverGreen, 'pair-arcs':el.pairArcs, 'move-arcs':el.moveOnArcs,
+        shades:el.shades, 'silver-green':el.silverGreen, 'hide-zero':el.hideZero, 'pair-arcs':el.pairArcs, 'move-arcs':el.moveOnArcs,
         'auto-align':el.autoAlign, 'reverse-dataflow':el.reverseDataflow };
     if (checks[name]) return setCheckboxCommand(checks[name], need());
     if (name === 'layout') { const v = need().toLowerCase(); const button = {butterfly:el.butterfly, omega:el.omega, rnetwork:el.rnetwork}[v]; if (!button) throw new Error('Layout must be butterfly, omega, or rnetwork'); button.click(); return; }
@@ -3564,6 +3663,14 @@ function executeConsoleCommand(command) {
     if (name === 'panel-diagrams') { const open = parseBoolean(need()); setPanelOpen(el.sidebar, open); recordCommand(`+panel-diagrams=${open ? 1 : 0}`); return; }
     throw new Error(`Unknown command: +${name}`);
 }
+function setQrOpen(open) {
+    el.qrOverlay.hidden = !open;
+}
+on(el.qrOpen, 'click', () => setQrOpen(true));
+on(el.qrClose, 'click', () => setQrOpen(false));
+on(el.qrOverlay, 'click', event => { if (event.target === el.qrOverlay) setQrOpen(false); });
+on(document, 'keydown', event => { if (event.key === 'Escape' && !el.qrOverlay.hidden) setQrOpen(false); });
+
 function setupConsole() {
     state.consoleEnabled = QUERY.get('console') === '1';
     el.commandConsole.hidden = !state.consoleEnabled;
