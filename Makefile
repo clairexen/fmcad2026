@@ -46,10 +46,7 @@ prove_hilewitz/PASS: hilewitz.v
 # Rebuilding checked-in files
 
 rebuild:: purge
-rebuild:: decoder-stats rebuild-all-sag-types-pngs
-
-rebuild-decoder-stats:
-	bash decoder_stats.sh decoder_stats.md
+rebuild:: rebuild-all-sag-types-pngs rebuild-stats
 
 rebuild-all-sag-types-pngs:
 	bash illustrations/All-SAG-Types.sh
