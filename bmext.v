@@ -38,8 +38,8 @@ module bmext #(
 			assign st_xor[0] = !st_ci[0];
 			for (i = 1; i < XLEN; i = i+1) begin:control
 				assign st_xor[i] = !st_ci[i] ^ (st_xor[i-1] & st_msk[i-1]);
-				assign st_ct[i-1] = st_xor[i-1] ? st_ci[i] & st_msk[i] : st_ci[i-1];
-				assign st_dt[i-1] = st_xor[i-1] ? st_di[i] & st_msk[i] : st_di[i-1];
+				assign st_ct[i-1] = st_xor[i-1] ? st_ci[i] & st_msk[i-1] : st_ci[i-1];
+				assign st_dt[i-1] = st_xor[i-1] ? st_di[i] & st_msk[i-1] : st_di[i-1];
 			end
 			assign st_ct[XLEN-1] = ~st_xor[XLEN-1] & st_ci[XLEN-1];
 			assign st_dt[XLEN-1] = ~st_xor[XLEN-1] & st_di[XLEN-1];

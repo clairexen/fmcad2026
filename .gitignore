@@ -2,10 +2,10 @@
 /prove_bmsf/
 /prove_bmcf/
 /prove_bmic/
-/prove_bmext/
+/prove_bmext_omega/
+/prove_bmext_shift/
 /prove_bmdep/
-/prove_hilewitz_omega/
-/prove_hilewitz_shift/
+/prove_hilewitz/
 /stats_script.mk
 /stats_cached/
 /tmp/

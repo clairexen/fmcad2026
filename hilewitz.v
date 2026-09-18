@@ -113,7 +113,7 @@ module clairexen_omega_decoder #(
 	assign stage[0].st_msk = (1 << (XLEN-1)) - 1;
 endmodule
 
-module prove_bmext_bmdep_omega_encoders_equiv #(
+module prove_decoders_equiv #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
 ) (
@@ -139,100 +139,5 @@ module prove_bmext_bmdep_omega_encoders_equiv #(
 
 `ifdef FORMAL
 	always @* assert (h_ctrl == c_ctrl_reshuffled);
-`endif
-endmodule
-
-// -----------------------------------------------------------------------
-
-// the "shift"-style control generator from bmext.v
-module clairexen_shift_decoder #(
-	parameter integer XLOG2 = 4,
-	parameter integer XLEN = 1 << XLOG2
-) (input [XLEN-1:0] cin, output [XLOG2*XLEN-1:0] ctrl);
-	genvar n, i;
-
-	generate
-		for (n = 0; n < XLOG2; n = n+1) begin:stage
-			wire [XLEN-1:0] st_ci, st_msk, st_xor, st_ct, st_co;
-			assign st_xor[0] = !st_ci[0];
-			for (i = 1; i < XLEN; i = i+1) begin:control
-				assign st_xor[i] = !st_ci[i] ^ (st_xor[i-1] & st_msk[i-1]);
-			end
-			assign st_ct = (st_xor & ((st_ci >> 1) & st_msk)) | (~st_xor & st_ci);
-			for (i = 0; i < (XLEN >> 1); i = i+1) begin:route
-				assign st_co[(XLEN >> 1) + i] = st_ct[2*i+1], st_co[i] = st_ct[2*i];
-			end
-			assign ctrl[n*XLEN +: XLEN] = st_xor;
-			wire [XLEN-1:0] stage_ctrl;
-			assign stage_ctrl = ctrl[n*XLEN +: XLEN];
-		end
-		for (n = 1; n < XLOG2; n = n+1) begin:interconn
-			assign stage[n].st_msk = stage[n-1].st_msk &
-					({stage[n-1].st_msk, stage[n-1].st_msk} >> (XLEN >> n));
-			assign stage[n].st_ci = stage[n-1].st_co;
-		end
-	endgenerate
-
-	assign stage[0].st_ci = cin;
-	assign stage[0].st_msk = (1 << (XLEN-1)) - 1;
-endmodule
-
-module shift_network #(
-	parameter integer XLOG2 = 4,
-	parameter integer XLEN = 1 << XLOG2
-) (
-	input [XLEN-1:0] din,
-	input [XLEN*XLOG2-1:0] ctrl,
-	output [XLEN-1:0] dout
-);
-	genvar n, i;
-
-	generate
-		for (n = 0; n < XLOG2; n = n+1) begin:stage
-			wire [XLEN-1:0] st_di, st_ci, st_msk, st_xor, st_dt, st_ct, st_do, st_co;
-			assign st_xor = ctrl[n*XLEN +: XLEN];
-			assign st_dt = (st_xor & ((st_di >> 1) & st_msk)) | (~st_xor & st_di);
-			for (i = 0; i < (XLEN >> 1); i = i+1) begin:route
-				assign st_do[(XLEN >> 1) + i] = st_dt[2*i+1], st_do[i] = st_dt[2*i];
-			end
-		end
-		for (n = 1; n < XLOG2; n = n+1) begin:interconn
-			assign stage[n].st_msk = stage[n-1].st_msk &
-					({stage[n-1].st_msk, stage[n-1].st_msk} >> (XLEN >> n));
-			assign stage[n].st_di = stage[n-1].st_do;
-		end
-	endgenerate
-
-	assign stage[0].st_di = din;
-	assign stage[0].st_msk = (1 << (XLEN-1)) - 1;
-	assign dout = stage[XLOG2-1].st_do;
-endmodule
-
-module prove_bmext_bmdep_shift_encoder #(
-	parameter integer XLOG2 = 4,
-	parameter integer XLEN = 1 << XLOG2
-) (
-	input [XLEN-1:0] din, cin,
-	output [XLEN-1:0] dout,
-	output [XLOG2*XLEN-1:0] ctrl,
-);
-	clairexen_shift_decoder #(XLOG2, XLEN) c_ref (cin, ctrl);
-	shift_network #(XLOG2, XLEN) c_shift (din & cin, ctrl, dout);
-
-`ifdef FORMAL
-	integer k, cnt1, cnt0;
-	always @* begin
-		cnt1 = 0;
-		cnt0 = 0;
-		for (k = 0; k < XLEN; k = k + 1) begin
-			if (cin[k] == 1'b1) begin
-				assert (dout[cnt1] == din[k]);
-				cnt1 = cnt1 + 1;
-			end else begin
-				assert (dout[XLEN-cnt0-1] == 1'b0);
-				cnt0 = cnt0 + 1;
-			end
-		end
-	end
 `endif
 endmodule

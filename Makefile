@@ -17,7 +17,7 @@
 # Formal Proofs with SymbiYosys
 
 formal: prove_bmcf/PASS prove_bmic/PASS prove_bmgf/PASS prove_bmsf/PASS \
-	prove_bmext/PASS prove_bmdep/PASS prove_hilewitz_omega/PASS prove_hilewitz_shift/PASS
+	prove_bmext_omega/PASS prove_bmext_shift/PASS prove_bmdep/PASS prove_hilewitz/PASS
 
 prove_bmcf/PASS: bmcf.v bmgf.v
 	sby -f prove_bmcf.sby
@@ -31,17 +31,17 @@ prove_bmgf/PASS: bmgf.v
 prove_bmsf/PASS: bmsf.v
 	sby -f prove_bmsf.sby
 
-prove_bmext/PASS: bmext.v bmgf.v
-	sby -f prove_bmext.sby
+prove_bmext_omega/PASS: bmext.v bmgf.v
+	sby -f prove_bmext.sby omega
+
+prove_bmext_shift/PASS: bmext.v bmgf.v
+	sby -f prove_bmext.sby shift
 
 prove_bmdep/PASS: bmdep.v bmsf.v
 	sby -f prove_bmdep.sby
 
-prove_hilewitz_omega/PASS: hilewitz.v
-	sby -f prove_hilewitz.sby omega
-
-prove_hilewitz_shift/PASS: hilewitz.v
-	sby -f prove_hilewitz.sby shift
+prove_hilewitz/PASS: hilewitz.v
+	sby -f prove_hilewitz.sby
 
 .PHONY: formal
 
@@ -70,10 +70,10 @@ clean:
 	rm -rf prove_bmic/
 	rm -rf prove_bmgf/
 	rm -rf prove_bmsf/
-	rm -rf prove_bmext/
+	rm -rf prove_bmext_omega/
+	rm -rf prove_bmext_shift/
 	rm -rf prove_bmdep/
-	rm -rf prove_hilewitz_omega/
-	rm -rf prove_hilewitz_shift/
+	rm -rf prove_hilewitz/
 	rm -rf stats_cached/
 	rm -rf stats_script.mk
 
