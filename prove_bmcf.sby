@@ -9,6 +9,7 @@ smtbmc boolector
 
 [script]
 read -noverific
+read -define BMGF_WITH_COUT
 read -formal bmcf.v
 read -vlog95 bmgf.v
 prep -top bmcf
