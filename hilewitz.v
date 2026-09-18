@@ -81,7 +81,7 @@ module bmext_hilewitz #(
 	assign dout = data[XLOG2];
 endmodule
 
-// the "omega"-style control generator from bmgf.v
+// the "omega"-style decoder from bmgf.v
 module clairexen_omega_decoder #(
 	parameter integer XLOG2 = 4,
 	parameter integer XLEN = 1 << XLOG2
@@ -101,6 +101,39 @@ module clairexen_omega_decoder #(
 				assign st_ct[2*i+1] = st_xor[2*i] ? st_ci[2*i  ] : st_ci[2*i+1];
 				assign st_co[(XLEN >> 1) + i] = st_ct[2*i+1], st_co[i] = st_ct[2*i];
 			end
+		end
+		for (n = 1; n < XLOG2; n = n+1) begin:interconn
+			assign stage[n].st_msk = stage[n-1].st_msk &
+					({stage[n-1].st_msk, stage[n-1].st_msk} >> (XLEN >> n));
+			assign stage[n].st_ci = stage[n-1].st_co;
+		end
+	endgenerate
+
+	assign stage[0].st_ci = cin;
+	assign stage[0].st_msk = (1 << (XLEN-1)) - 1;
+endmodule
+
+// for size comparison only: the "shift"-style decoder from bmext.v
+module clairexen_shift_decoder #(
+	parameter integer XLOG2 = 4,
+	parameter integer XLEN = 1 << XLOG2
+) (input [XLEN-1:0] cin, output [XLOG2*XLEN-1:0] ctrl);
+	genvar n, i;
+
+	generate
+		for (n = 0; n < XLOG2; n = n+1) begin:stage
+			wire [XLEN-1:0] st_ci, st_msk, st_xor, st_ct, st_co;
+			assign st_xor[0] = !st_ci[0];
+			for (i = 1; i < XLEN; i = i+1) begin:control
+				assign st_xor[i] = !st_ci[i] ^ (st_xor[i-1] & st_msk[i-1]);
+				assign st_ct[i-1] = st_xor[i-1] ? st_ci[i] & st_msk[i-1] : st_ci[i-1];
+			end
+			assign st_ct[XLEN-1] = ~st_xor[XLEN-1] & st_ci[XLEN-1];
+			// assign st_ct = (st_xor & ((st_ci >> 1) & st_msk)) | (~st_xor & st_ci);
+			for (i = 0; i < (XLEN >> 1); i = i+1) begin:route
+				assign st_co[(XLEN >> 1) + i] = st_ct[2*i+1], st_co[i] = st_ct[2*i];
+			end
+			assign ctrl[n*XLEN +: XLEN] = st_xor;
 		end
 		for (n = 1; n < XLOG2; n = n+1) begin:interconn
 			assign stage[n].st_msk = stage[n-1].st_msk &

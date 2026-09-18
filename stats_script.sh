@@ -8,7 +8,7 @@ xlens=(8 16 32 64)
 targets=(cmos lut4 lut6)
 decoder_designs=(hilewitz_decoder clairexen_{omega,shift}_decoder)
 # bmfunc_designs=(bm{cf,ic,gf,sf,ext,dep} bmext_{omega,shift,hilewitz})
-bmfunc_designs=(bm{gf,sf,ext,dep} bmext_{omega,shift,hilewitz})
+bmfunc_designs=(bm{gf,sf,dep} bmext_{omega,shift,hilewitz})
 designs=("${decoder_designs[@]}" "${bmfunc_designs[@]}")
 
 getdeps() {
@@ -16,10 +16,10 @@ getdeps() {
 		hilewitz_*|clairexen_*_decoder|bmext_hilewitz)
 			echo hilewitz.v
 			;;
-		bmcf|bmic|bmgf|bmsf|bmext|bmdep)
+		bmcf|bmic|bmgf|bmsf|bmdep)
 			echo $1.v
 			case "$1" in
-				bmcf|bmext) echo bmgf.v ;;
+				bmcf) echo bmgf.v ;;
 				bmic|bmdep) echo bmsf.v ;;
 			esac
 			;;

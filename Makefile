@@ -59,7 +59,7 @@ rebuild-stats:
 	bash stats_script.sh mkrules
 	$(MAKE) -f stats_script.mk
 
-.PHONY: rebuild rebuild-decoder-stats rebuild-all-sag-types-pngs
+.PHONY: rebuild rebuild-all-sag-types-pngs rebuild-stats
 
 
 ######################################
