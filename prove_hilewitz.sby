@@ -1,3 +1,7 @@
+[tasks]
+omega
+shift
+
 [options]
 mode bmc
 depth 1
@@ -10,7 +14,8 @@ smtbmc boolector
 [script]
 read -noverific
 read -formal hilewitz.v
-prep -top prove_hilewitz_clairexen_equiv
+omega: prep -top prove_bmext_bmdep_omega_encoders_equiv
+shift: prep -top prove_bmext_bmdep_shift_encoder
 
 [files]
 hilewitz.v

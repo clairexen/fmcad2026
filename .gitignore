@@ -4,7 +4,8 @@
 /prove_bmic/
 /prove_bmext/
 /prove_bmdep/
-/prove_hilewitz/
+/prove_hilewitz_omega/
+/prove_hilewitz_shift/
 /stats_script.mk
 /stats_cached/
 /tmp/
